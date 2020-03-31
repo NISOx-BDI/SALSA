@@ -1,0 +1,10 @@
+*.mat
+*.nii.gz
+*.nii
+**/logs
+**/R
+**/S
+*.png
+fmristat
+fMRI_temporal_autocorrelation-master
+Externals
