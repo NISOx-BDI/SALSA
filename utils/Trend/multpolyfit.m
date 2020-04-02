@@ -1,4 +1,4 @@
-function [dymat,polycoefs,trendY] = multpolyfit(xmat,ymat,T,p)
+function [dymat,trendY,polycoefs] = multpolyfit(xmat,ymat,T,p)
 
 % [dymat,polycoefs,trendY] = multpolyfit(xmat,ymat,p)
 %

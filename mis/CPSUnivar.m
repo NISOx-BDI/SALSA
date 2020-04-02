@@ -17,8 +17,8 @@ end
 freq  = (select-1)*2/(nScan-nVar);
 power = [2*Spec(select)];
 
-CPseries    = cumsum(power);
-Flength     = size(CPseries,1);
+CPseries = cumsum(power);
+Flength = size(CPseries,1);
 CPS	= CPseries./(repmat(sum(power),Flength,1));
 
 %-setup the upper and lower statistic for the Cumulative periodogram
