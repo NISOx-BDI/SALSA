@@ -7,11 +7,11 @@ PATH00='/Users/sorooshafyouni/Home/GitClone/FILM2';
 addpath([PATH00 '/utils/Trend'])
 addpath('/Users/sorooshafyouni/Home/matlab/spm12')
 addpath([PATH00 '/utils/AR_YW'])
+addpath([PATH00 '/utils/ARMA_HR'])
 addpath([PATH00 '/mis'])
 
-pwdmethod = 'AR-W'; %ACF AR-YW AR-W
+pwdmethod = 'ARMAHR'; %ACF AR-YW AR-W ARMAHR
 Mord      = 5; 
-
 
 % rngid = 20200330;
 % rng(rngid)
@@ -38,15 +38,9 @@ Vorig = InputImgStat.CleanedDim(1);
 V = Vorig;
 
 %%% Generate a Design Matrix %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-bcduration  = 20;
-BCWidth     = fix(bcduration/TR);
-oneSTIM     = [zeros(1, BCWidth), ones(1, BCWidth)];
-numberSTIM  = fix(T/numel(oneSTIM));
-DD          = repmat(oneSTIM, [1, numberSTIM]);
-hrf         = spm_hrf(TR); 
-conv_dsgn   = conv(DD,hrf); 
-EDX         = conv_dsgn(1:T)';
-EDX         = EDX - mean(EDX); 
+BCl = 20;
+EDX = GenerateED(BCl,T,TR); 
+EDX = EDX - mean(EDX); 
 
 %%% DETREND %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if DoDetrendingPrior
@@ -71,7 +65,7 @@ end
 TempTrend = []; MCp = [];
 
 if NumTmpTrend>0
-    TempTrend   = GenerateTemporalTrends(T,TR,NumTmpTrend); % DC + Poly trends + Spline trends 
+    [TempTrend,NUMSPLINES]   = GenerateTemporalTrends(T,TR,NumTmpTrend); % DC + Poly trends + Spline trends 
     TempTrend   = TempTrend(:,2:end); % we add a column of one later.
 end
 disp(['Number of temporal trends: ' num2str(NumTmpTrend)])
@@ -106,7 +100,7 @@ end
 %%% BIAS REDUCTION OF AUTOREGRESSIVE MODELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-YWflag = 0; WrosleyFlag = 0; ACFflag     = 0;
+YWflag = 0; WrosleyFlag = 0; ACFflag = 0; ARMAHRflag = 0;
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     WrosleyFlag = 1; 
     warning('off','MATLAB:toeplitz:DiagonalConflict')
@@ -124,6 +118,8 @@ elseif strcmpi(pwdmethod,'AR-YW') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%
     invM_biasred = eye(Mord+1);
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ACFflag = 1;
+elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ARMAHRflag = 1; 
 end
 
 
@@ -142,8 +138,16 @@ for vi = 1:V
     if YWflag % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['AR-YW ::: on voxel ' num2str(vi)]); end; 
         % Prewhiten the residuals using Yule-Walker estimates
-        YWARparam_tmp   = AR_YW(dYorig,Mord);
-        YWARparam(vi,:) = YWARparam_tmp;
+        %YWARparam_tmp   = AR_YW(dYorig,Mord);
+        %YWARparam(vi,:) = YWARparam_tmp;
+       
+        %AR_YW -------------------------------------------
+        ac_tmp          = dRESacorr(vi,:);    
+        R_tmp           = toeplitz(ac_tmp(1:Mord));
+        r_tmp           = ac_tmp(2:Mord+1);
+        YWARparam_tmp   = pinv(R_tmp)*r_tmp';
+        % ------------------------------------------------
+        
         ACMat           = full(spm_Q(YWARparam_tmp,T));
         
         invACMat        = inv(ACMat); % pinv is damn slow!
@@ -164,12 +168,31 @@ for vi = 1:V
         dRESac_adj      = (invM_biasred*dRESacov(vi,1:Mord+1)');
         dRESac_adj      = dRESac_adj./dRESac_adj(1); % make a auto*correlation*
         
-        [Ainvt,posdef] = chol(toeplitz(dRESac_adj)); 
-        p1      = size(Ainvt,1); 
-        A       = inv(Ainvt'); 
-        sqrtmVhalf  = toeplitz([A(p1,p1:-1:1) zeros(1,T-p1)],zeros(1,T)); 
+        [Ainvt,posdef]      = chol(toeplitz(dRESac_adj)); 
+        p1                  = size(Ainvt,1); 
+        A                   = inv(Ainvt'); 
+        sqrtmVhalf          = toeplitz([A(p1,p1:-1:1) zeros(1,T-p1)],zeros(1,T)); 
         sqrtmVhalf(1:p1,1:p1) = A;
+        
+        
+    elseif ARMAHRflag % ARMA HR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if ~mod(vi,5000); disp(['ARMA-HR ::: on voxel ' num2str(vi)]); end; 
+        MPparamNum          = 1;
+        ARParamARMA         = 50;
+        
+        %AR_YW -------------------------------------------
+        ac_tmp              = dRESacorr(vi,:);    
+        R_tmp               = toeplitz(ac_tmp(1:ARParamARMA));
+        r_tmp               = ac_tmp(2:ARParamARMA+1);
+        YWARparam_tmp       = pinv(R_tmp)*r_tmp';
+        % ------------------------------------------------
+        
+        [arParam,maParam]   = ARMA_HR_ACF(residY(vi,:)',YWARparam_tmp',T,Mord,MPparamNum);
+        %[arParam,maParam]   = ARMA_HR(residY(vi,:)',Mord,MPparamNum);
+        ACMat               = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
 
+        invACMat   = inv(ACMat); % pinv is damn slow!
+        sqrtmVhalf = chol(invACMat);        
     end
         
     % Make the X & Y whitened %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,16 +200,18 @@ for vi = 1:V
     Xstar_YW = sqrtmVhalf*X;
     
     % Fit a model to the prewhitened system  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-    Xstar_YW                                            = [ones(T,1), Xstar_YW]; % add intercept
-    [Bhat_PW_S_tmp,~,dpwRES_tmp,Beta_PW_SE_T_tmp]    = myOLS(Ystar_YW,Xstar_YW);
-    Bhat_PW_S(vi)    = Bhat_PW_S_tmp(ED_IDX);         
-    Beta_PW_SE_T(vi) = Beta_PW_SE_T_tmp(ED_IDX);
+    Xstar_YW                                         = [ones(T,1), Xstar_YW]; % add intercept
+    [Bhat_PW_S_tmp,~,dpwRES_tmp,Stat_PW_SE_T_tmp]    = myOLS(Ystar_YW,Xstar_YW);
+    Bhat_PW(vi)    = Bhat_PW_S_tmp;         
+    SE_PW(vi)      = Stat_PW_SE_T_tmp.se;
+    tVALUE_PW(vi)  = Stat_PW_SE_T_tmp.tval;
     
     % Whithout prewhitening of error %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     X0                                                  = [ones(T,1),X];
-    [Bhat_Naive_S_tmp,~,resNaive,Beta_Naive_SE_T_tmp]   = myOLS(dY(vi,:),X0);
-    Bhat_Naive_S(vi)    = Bhat_Naive_S_tmp(ED_IDX);
-    Beta_Naive_SE_T(vi) = Beta_Naive_SE_T_tmp(ED_IDX);
+    [Bhat_Naive_S_tmp,~,resNaive,Stat_Naive_SE_tmp]   = myOLS(dY(vi,:),X0);
+    Bhat_Naive(vi)    = Bhat_Naive_S_tmp;
+    SE_Naive(vi)      = Stat_Naive_SE_tmp.se;
+    tVALUE_Naive(vi)  = Stat_Naive_SE_tmp.tval;
     
     [~,CPSstat_PW(vi),CPZ_PW(vi)]       = CPSUnivar(dpwRES_tmp,X0);
     [~,CPSstat_Naive(vi),CPZ_Naive(vi)] = CPSUnivar(resNaive,X0);
@@ -198,8 +223,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    VariableList = {'Bhat_Naive_S','Beta_Naive_SE_T',...
-        'Bhat_PW_S','Beta_PW_SE_T',...
+    VariableList = {'Bhat_Naive','SE_Naive','tVALUE_Naive',...
+        'Bhat_PW','SE_PW','tVALUE_PW',...
         'CPSstat_PW','CPZ_PW',...
         'CPZ_Naive','CPSstat_Naive'};
     OutputImgStat            = InputImgStat.spmV(1);
