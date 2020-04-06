@@ -2,29 +2,43 @@
 
 warning('off','all')
 
-pwdmethod = 'ARMAHR'; %ACF AR-YW AR-W ARMAHR
-Mord      = 5; 
+#pwdmethod = 'ARMAHR'; %ACF AR-YW AR-W ARMAHR
+#Mord      = 5; 
+#SubID     = 'A00029304';
+#SesID     = 'DS2';
+#TR        = 0.645;
 
-SubID     = 'A00029304';
+# What is flowing in from the cluster:
+disp('From the cluster ======================')
+disp(['SubID: ' SubID])
+disp(['SesID: ' SesID])
+disp(['TR: ' num2str(TR)])
+disp(['ARmethod: ' pwdmethod])
+disp(['AR order:' num2str(Mord)])
+disp(['COHORT directory:' COHORTDIR])
+disp('=======================================')
 
-SesID     = 'DS2';
-TR        = 0.645;
-
-PATH2AUX='/Users/sorooshafyouni/Home/GitClone/FILM2';
+PATH2AUX='~/bin/FILM2';
 addpath([PATH2AUX '/utils/Trend'])
-addpath('/Users/sorooshafyouni/Home/matlab/spm12')
 addpath([PATH2AUX '/utils/AR_YW'])
 addpath([PATH2AUX '/utils/ARMA_HR'])
 addpath([PATH2AUX '/mis'])
+addpath('/well/nichols/users/scf915/externals/spm12')
 
+disp('Setup the paths...')
 %Raw Images (MMP feat output)
 Path2ImgRaw = [COHORTDIR '/R_mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
 Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
 Path2MC     = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
+disp(['Image: ' Path2Img])
+disp(['Motion params: ' Path2MC])
+
 % Directory 2 save the results
 Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '/RNullfMRI_' SubID '_' SesID];
+
+disp(['Output stuff: ' Path2ImgResults])
 
 SaveImagesFlag      = 1; 
 DoDetrendingPrior   = 0; 
