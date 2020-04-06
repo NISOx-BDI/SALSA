@@ -1,4 +1,4 @@
-clear
+%clear
 
 warning('off','all')
 
@@ -6,6 +6,7 @@ pwdmethod = 'ARMAHR'; %ACF AR-YW AR-W ARMAHR
 Mord      = 5; 
 
 SubID     = 'A00029304';
+
 SesID     = 'DS2';
 TR        = 0.645;
 
@@ -17,18 +18,18 @@ addpath([PATH2AUX '/utils/ARMA_HR'])
 addpath([PATH2AUX '/mis'])
 
 %Raw Images (MMP feat output)
-Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
-Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold.mpp'];
-Path2Img = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
-Path2MC  = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
+Path2ImgRaw = [COHORTDIR '/R_mpp'];
+Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
+Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
+Path2MC     = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
 % Directory 2 save the results
-Path2ImgResults=[PATH2AUX '/ExampleData/R.mpp/RNullfMRI_' SubID '_' SesID];
+Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '/RNullfMRI_' SubID '_' SesID];
 
-SaveImagesFlag      = 0; 
+SaveImagesFlag      = 1; 
 DoDetrendingPrior   = 0; 
-MParamNum   = 6; 
-NumTmpTrend = 3;
+MParamNum           = 6; 
+NumTmpTrend         = 3;
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
 [Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean');
