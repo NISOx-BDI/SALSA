@@ -23,9 +23,10 @@ addpath([PATH2AUX '/utils/Trend'])
 addpath([PATH2AUX '/utils/AR_YW'])
 addpath([PATH2AUX '/utils/ARMA_HR'])
 addpath([PATH2AUX '/mis'])
-addpath('/well/nichols/users/scf915/externals/spm12')
+addpath (fullfile ('/users/nichols/scf915', "spm12-r7771"));
+#addpath('/well/nichols/users/scf915/externals/spm12')
 
-disp('Setup the paths...')
+disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
 Path2ImgRaw = [COHORTDIR '/R_mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
@@ -38,6 +39,11 @@ disp(['Motion params: ' Path2MC])
 % Directory 2 save the results
 Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '/RNullfMRI_' SubID '_' SesID];
 
+if ~exist(Path2ImgResults, 'dir')
+	mkdir(Path2ImgResults)
+	disp(['The directory: ' Path2ImgResults 'did not exists. I made one. '])
+end
+
 disp(['Output stuff: ' Path2ImgResults])
 
 SaveImagesFlag      = 1; 
@@ -46,6 +52,7 @@ MParamNum           = 6;
 NumTmpTrend         = 3;
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
+disp('=====LOAD THE IMAGE ===========================')
 [Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean');
 T = InputImgStat.CleanedDim(2);
 TR = InputImgStat.voxelsize(4);

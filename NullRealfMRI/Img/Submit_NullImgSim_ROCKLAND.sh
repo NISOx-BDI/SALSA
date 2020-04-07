@@ -43,7 +43,7 @@ cat > $SubmitterFileName << EOF
 #$ -o ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.out
 #$ -e ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.err
 #$ -N ${JobName}
-#$ -t 1-1 #${NUMJB}
+#$ -t 1-20 #${NUMJB}
 
 # This whole business is rubbish! This should be fixed!
 source \${HOME}/.bashrc
