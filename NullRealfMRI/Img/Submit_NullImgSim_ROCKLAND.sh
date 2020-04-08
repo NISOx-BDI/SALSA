@@ -4,7 +4,7 @@ COHORT=ROCKLAND
 
 METHODLIST=(ACF AR-YW AR-W ARMAHR)
 ARMODE=(1 2 5 10 20)
-MAO=1
+FWHMsize=0
 
 STRGDIR=/well/nichols/users/scf915
 COHORTDIR=${STRGDIR}/${COHORT}
@@ -21,33 +21,35 @@ mkdir -p ${SUBMITDIR}
 
 for METH_ID in ${METHODLIST[@]}
 do
+	MAO=0
+	[ $METH_ID == "ARMAHR" ]&& MAO=1
+
 	for ARO in ${ARMODE[@]}
 	do
 
 	JobName=${COHORT}_${METH_ID}_AR-${ARO}
-	SubmitterFileName="${SUBMITDIR}/SubmitMe_${COHORT}_${METH_ID}_AR-${ARO}_MA-${MAO}.sh"
+	SubmitterFileName="${SUBMITDIR}/SubmitMe_${COHORT}_${METH_ID}_AR-${ARO}_MA-${MAO}_FWHM${FWHMsize}.sh"
 
 echo ${SubmitterFileName}
 
-Path2ImgResults=${COHORTDIR}/R.PW/${METH_ID}_AR-${ARO}
+Path2ImgResults=${COHORTDIR}/R.PW/${METH_ID}_AR-${ARO}_FWHM${FWHMsize}
 OpLog=${Path2ImgResults}/logs/
 
 
 mkdir -p ${OpLog}
 
 cat > $SubmitterFileName << EOF
-
 #!/bin/bash
 #$ -cwd
-#$ -q short.qc
+#$ -q short.qc@@short.hge
 #$ -o ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.out
 #$ -e ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.err
 #$ -N ${JobName}
-#$ -t 1-20 #${NUMJB}
+#$ -t 1-200 #${NUMJB}
 
 # This whole business is rubbish! This should be fixed!
-source \${HOME}/.bashrc
-module use -a /apps/eb/skylake/modules/all
+# source \${HOME}/.bashrc
+# module use -a /apps/eb/skylake/modules/all
 module load Octave/4.4.1-foss-2018b
 
 SubID=\$(cat ${COHORTDIR}/sub.txt | sed "\${SGE_TASK_ID}q;d" )
@@ -55,7 +57,7 @@ SubID=\$(echo \${SubID} | awk -F"-" '{print \$2}')
 
 OCTSCRPT=\${HOME}/bin/FILM2/NullRealfMRI/Img
 cd \${OCTSCRPT}
-octave -q --eval "COHORTDIR=\"${COHORTDIR}\"; pwdmethod=\"${METH_ID}\"; TR=${TR}; Mord=${ARO}; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc; quit"
+octave -q --eval "COHORTDIR=\"${COHORTDIR}\"; pwdmethod=\"${METH_ID}\"; lFWHM=${FWHMsize}; TR=${TR}; Mord=${ARO}; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc; quit"
 
 EOF
 	done
