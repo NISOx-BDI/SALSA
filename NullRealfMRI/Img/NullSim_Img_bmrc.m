@@ -15,6 +15,7 @@ disp(['SesID: ' SesID])
 disp(['TR: ' num2str(TR)])
 disp(['ARmethod: ' pwdmethod])
 disp(['AR order:' num2str(Mord)])
+disp(['lFWHM: ' num2str(lFWHM)])
 disp(['COHORT directory:' COHORTDIR])
 disp('=======================================')
 
@@ -37,7 +38,7 @@ disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
 
 % Directory 2 save the results
-Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '/RNullfMRI_' SubID '_' SesID];
+Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '/RNullfMRI_' SubID '_' SesID '_FWHM' num2str(lFWHM)];
 
 if ~exist(Path2ImgResults, 'dir')
 	mkdir(Path2ImgResults)
@@ -256,7 +257,7 @@ if SaveImagesFlag
     for vname = VariableList
 
         tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum)  '_' vname{1} '.nii'];
+        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
 
