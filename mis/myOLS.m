@@ -3,12 +3,19 @@ function [cbhat,Yhat,RES,stat] = myOLS(Y,X,contrast)
     % scalar: lower-case
     % vector/matrix: capital
     
-    Y = Y(:); % make it a column 
-    t = numel(Y); 
-
-    if size(X,1) ~= t; X = X'; end
-
+    verbose = 0;
+    
+    if size(Y,1)~=size(X,1); error('myOLS:: check the inputs!'); end; 
+    if size(X,1)<size(X,2); error('myOLS:: The model is not stable.'); end; 
+    
+    
+    t           = size(X,1);
     p           = rank(X);
+    
+    if verbose 
+        disp(['voxels: ' num2str(size(Y,2)) ', timepoints: ' num2str(t) ', rankX: ' num2str(p) ])
+    end
+    
     stat.Bhat   = X\Y; % \Beta = X^{+}Y
     Yhat        = X*stat.Bhat; %
     RES         = Y-Yhat; % sanitycheck: d.resid(1:5)
