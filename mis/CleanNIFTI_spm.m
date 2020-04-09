@@ -99,8 +99,18 @@ if ischar(V0)
         Stat.spmV = Vstruct;
         %[V2,dims,voxelsize] = read_avw(V0);
         
-        X0 = size(V2,1); Y0 = size(V2,2); Z0 = size(V2,3); T0 = size(V2,4);
-        if sum(ismember(dims,[X0,Y0,Z0,T0]))~=4
+        ND=ndims(V2);
+        
+        if ND==3
+            T0 = 1;
+        elseif ND==4
+            T0 = size(V2,4);
+        else
+            error('The input should be either 3D or 4D.');
+        end
+        X0 = size(V2,1); Y0 = size(V2,2); Z0 = size(V2,3); 
+        
+        if sum(ismember(dims,[X0,Y0,Z0,T0]))~=ND
             error('CleanNIFTI_fsl:: something is wrong with the dimensions!'); 
         end
         
