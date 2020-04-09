@@ -168,11 +168,14 @@ if ~SaveFlag
     Stat.OrigDim     = [I0 T0];
     Stat.CleanedDim  = [I1 T0];
     Stat.Removables  = [nan_idx;zeros_idx];
-    OrigMean = mean(Y,2);
+    Stat.idx         = idx;
+    OrigMean         = mean(Y,2);
     Stat.OrigMean    = OrigMean;
-    Stat.ImgDim = [X0 Y0 Z0 T0];
-    Stat.voxelsize = voxelsize;
-    Stat.datatype  = datatype;
+    Stat.ImgDim      = [X0 Y0 Z0 T0];
+    [X3d,Y3d,Z3d]    = ind2sub(Stat.ImgDim(1:3),idx);
+    Stat.idx3D       = [X3d;Y3d;Z3d]';       
+    Stat.voxelsize   = voxelsize;
+    Stat.datatype    = datatype;
 end
 %------------------------------------------------------------------------
 % Intensity Normalisation------------------------------------------------------
