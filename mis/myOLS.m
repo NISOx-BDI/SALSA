@@ -1,4 +1,4 @@
-function [cBhat,Yhat,res,stat] = myOLS(Y,X,contrast)
+function [cbhat,Yhat,RES,stat] = myOLS(Y,X,contrast)
 
     % scalar: lower-case
     % vector/matrix: capital
@@ -11,32 +11,32 @@ function [cBhat,Yhat,res,stat] = myOLS(Y,X,contrast)
     p           = rank(X);
     stat.Bhat   = X\Y; % \Beta = X^{+}Y
     Yhat        = X*stat.Bhat; %
-    res         = Y-Yhat; % sanitycheck: d.resid(1:5)
+    RES         = Y-Yhat; % sanitycheck: d.resid(1:5)
     COVX        = (X'*X);
     stat.df     = t-p;
-    
     
     if ~exist('contrast','var')
         contrast    = zeros(1,p);
         contrast(2) = 1;
     end
         
-    stat.mse   = sum(res.^2)/(t-p); 
+    stat.mse   = sum(RES.^2)/(t-p); 
     stat.se    = sqrt(stat.mse*(contrast*pinv(COVX)*contrast'));
     
-    cBhat      = contrast*stat.Bhat;
-    stat.tval  = cBhat./stat.se;
-    stat.pval  = 2*myOLS_tcdf(-abs(stat.tval),stat.df);
-    
-    rss = sum(res.^2);
+    cbhat      = contrast*stat.Bhat;
+    stat.tval  = cbhat./stat.se;
+    stat.ltp   = myOLS_tcdf(stat.tval,stat.df); % tcdf is not available on bmrc Ovtave 
+    stat.zval  = sqrt(2)*erfinv(2*stat.ltp-1); % does what norminv do; norminv is not available on bmrc Octave
+    stat.pval  = 1-stat.ltp;
+        
+    rss        = sum(RES.^2);
     % these two don't match what Matlab's fitglm.m outputs
     stat.AIC   = 2*(p+1)+t*log(rss/t);
-    stat.BIC   = log(t)*(p+1)+t*log(sum(res.^2)/t);
+    stat.BIC   = log(t)*(p+1)+t*log(sum(RES.^2)/t);
     
 end
 
-
-function p = myOLS_tcdf(x,n);
+function p = myOLS_tcdf(x,n)
 % TCDF returns student cumulative distribtion function
 %
 % cdf = tcdf(x,DF);
@@ -71,6 +71,19 @@ p(ix) = 1 - p(ix);
 p = reshape(p,size(x));
 
 end
+
+% ======= SPM ==================
+% Contrast
+% C = [1 0];
+% % t statistic and significance test
+% RSS   = sum((Y - X*B).^2);
+% MRSS  = RSS / df;
+% SE    = sqrt(MRSS*(C*pinv(X'*X)*C'));
+% t     = C*B./SE;
+% ltp   = spm_Tcdf(t, df); % lower tail p
+% Z     = spm_invNcdf(ltp);
+% p     = 1-ltp;           % upper tail p 
+% ==============================
 
 % WOW~
 % beautiful for teaching: 
