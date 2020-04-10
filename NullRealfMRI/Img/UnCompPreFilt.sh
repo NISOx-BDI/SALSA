@@ -2,8 +2,14 @@
 COHORT=ROCKLAND
 SesID=DS2
 
+SmthMM=5
+
 RawData=/well/nichols/users/scf915/${COHORT}/R_mpp
 SubIDDir=/well/nichols/users/scf915/${COHORT}
+
+
+module load fsl
+source ${HOME}/.fslconf/fsl.sh
 
 cat ${SubIDDir}/sub.txt | head -n 200 | while read SubID
 do
@@ -11,14 +17,24 @@ do
 	SubID=$(echo ${SubID} | awk -F"-" '{print $2}')
 	echo ${SubID}
 
-	CompData=${RawData}/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-DS2_task-rest_acq-645_bold_mpp/prefiltered_func_data_bet.nii.gz
-	UnCompData=${RawData}/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-DS2_task-rest_acq-645_bold_mpp/prefiltered_func_data_bet.nii
+	DataDir=${RawData}/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-DS2_task-rest_acq-645_bold_mpp/
+	CompData=${DataDir}/prefiltered_func_data_bet
 
-	echo ${CompData}
+	#echo ${CompData}
 
-	if [ ! -f $UnCompData ]; then
+	if [ ! -f ${CompData}.nii ]; then
 		echo "Uncompressing..."
-		gunzip -c ${CompData} > ${UnCompData}
+		gunzip -c ${CompData}.nii.gz #> ${CompData}.nii
+	elif [ -f ${CompData}.nii ] && [ -f ${CompData}.nii.gz ]; then
+		rm ${CompData}.nii.gz
+	fi
+
+	if [ ! -f ${CompData}_FWHM${SmthMM}.nii ]; then
+
+		${FSLDIR}/bin/fslmaths ${CompData}.nii -kernel gauss 2.1233226 -fmean ${CompData}_FWHM${SmthMM}.nii
+		echo "SMOOTHED AND DECOMPRESSED: ${CompData}_FWHM${SmthMM}.nii"
+	elif [ ${CompData}_FWHM${SmthMM}.nii.gz ]; then
+		rm -f ${CompData}_FWHM${SmthMM}.nii.gz
 	fi
 
 done
