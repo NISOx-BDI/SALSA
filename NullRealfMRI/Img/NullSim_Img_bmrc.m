@@ -2,11 +2,14 @@
 
 warning('off','all')
 
-%pwdmethod = 'ARMAHR'; %ACF AR-YW AR-W ARMAHR
+%pwdmethod = 'ACF'; %ACF AR-YW AR-W ARMAHR
 %Mord      = 5; 
+%TempTreMethod = 'spline'
 %SubID     = 'A00029304';
 %SesID     = 'DS2';
+%lFWHM     = 0;
 %TR        = 0.645;
+%COHORTDIR = '/well/nichols/users/scf915/ROCKLAND';
 
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
@@ -16,6 +19,7 @@ disp(['TR: ' num2str(TR)])
 disp(['ARmethod: ' pwdmethod])
 disp(['AR order:' num2str(Mord)])
 disp(['lFWHM: ' num2str(lFWHM)])
+disp(['Detrending: ' TempTreMethod])
 disp(['COHORT directory:' COHORTDIR])
 disp('=======================================')
 
@@ -24,14 +28,20 @@ addpath([PATH2AUX '/utils/Trend'])
 addpath([PATH2AUX '/utils/AR_YW'])
 addpath([PATH2AUX '/utils/ARMA_HR'])
 addpath([PATH2AUX '/mis'])
-addpath (fullfile ('/users/nichols/scf915', "spm12-r7771"));
+addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'));
 %addpath('/well/nichols/users/scf915/externals/spm12')
 
 disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
 Path2ImgRaw = [COHORTDIR '/R_mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
-Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
+
+if lFWHM
+    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
+else
+    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
+end
+  
 Path2MC     = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
 disp(['Image: ' Path2Img])
@@ -89,7 +99,7 @@ end
 TempTrend = []; MCp = [];
 
 if NumTmpTrend>0
-    [TempTrend,NUMSPLINES]   = GenerateTemporalTrends(T,TR,NumTmpTrend); % DC + Poly trends + Spline trends 
+    [TempTrend,NUMSPLINES]   = GenerateTemporalTrends(T,TR,TempTreMethod,NumTmpTrend); % DC + Poly trends + Spline trends 
     TempTrend   = TempTrend(:,2:end); % we add a column of one later.
 end
 disp(['Number of temporal trends: ' num2str(NumTmpTrend)])
@@ -268,7 +278,7 @@ if SaveImagesFlag
     for vname = VariableList
 
         tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' vname{1} '.nii'];
+        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
 

@@ -1,9 +1,9 @@
 clear; warning('off','all')
 
 pwdmethod = 'AR-W'; %ACF AR-YW AR-W ARMAHR
-Mord      = 5; 
+Mord      = 5; lFWHM = 0;
 SubID     = 'A00029304';
-SesID     = 'DS2';
+SesID     = 'DS2'; 
 TR        = 0.645;
 TempTreMethod = 'spline'; 
 
@@ -16,7 +16,7 @@ disp(['TR: ' num2str(TR)])
 disp(['ARmethod: ' pwdmethod])
 disp(['AR order:' num2str(Mord)])
 disp(['lFWHM: ' num2str(lFWHM)])
-disp(['COHORT directory:' COHORTDIR])
+%disp(['COHORT directory:' COHORTDIR])
 disp('=======================================')
 
 PATH2AUX='/Users/sorooshafyouni/Home/GitClone/FILM2';
@@ -31,7 +31,13 @@ disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
 Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold.mpp'];
-Path2Img = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
+
+if lFWHM
+    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
+else
+    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
+end
+
 Path2MC  = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
 disp(['Image: ' Path2Img])
