@@ -6,7 +6,7 @@ function [Trends,TrndOrd] = GenerateTemporalTrends(T,TR,ttmethod,numTremdOrCTFre
     
     if nargin==2; ttmethod='spline'; end; 
 
-    if ~exist('numTremdOrCTFreq','var'); numTremdOrCTFreq=[]; end
+    if ~exist('numTremdOrCTFreq','var') || isempty(numTremdOrCTFreq); numTremdOrCTFreq=[]; end
     switch lower(ttmethod)
         case{'spline'}
             [Trends,TrndOrd] = SplineTrendGen(T,TR,numTremdOrCTFreq);
