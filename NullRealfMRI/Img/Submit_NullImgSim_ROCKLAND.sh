@@ -8,8 +8,8 @@ METHODLIST=(ACF AR-YW AR-W ARMAHR)
 ARMODE=(1 2 5 10 20)
 ACMODE=(30 60)
 
-FWHMsize=5
-TempTreMethod="dct"
+FWHMsize=0
+TempTreMethod="poly"
 
 STRGDIR=/well/nichols/users/scf915
 COHORTDIR=${STRGDIR}/${COHORT}
