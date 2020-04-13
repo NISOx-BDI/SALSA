@@ -2,14 +2,16 @@
 
 warning('off','all')
 
+% ---------------- TEST ----------------------------
 %pwdmethod = 'ACF'; %ACF AR-YW AR-W ARMAHR
-%Mord      = 5; 
+%Mord      = 30; 
 %TempTreMethod = 'spline'
 %SubID     = 'A00029304';
 %SesID     = 'DS2';
 %lFWHM     = 0;
 %TR        = 0.645;
 %COHORTDIR = '/well/nichols/users/scf915/ROCKLAND';
+%Path2ImgResults = [COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(MPparamNum) '/' SubID '_' SesID ]
 
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
@@ -18,9 +20,11 @@ disp(['SesID: ' SesID])
 disp(['TR: ' num2str(TR)])
 disp(['ARmethod: ' pwdmethod])
 disp(['AR order:' num2str(Mord)])
+disp(['MA order: ' num2str(MPparamNum)])
 disp(['lFWHM: ' num2str(lFWHM)])
 disp(['Detrending: ' TempTreMethod])
 disp(['COHORT directory:' COHORTDIR])
+disp(['Parth 2 Results: ' Path2ImgResults ])
 disp('=======================================')
 
 PATH2AUX='~/bin/FILM2';
@@ -36,7 +40,7 @@ disp('=====SET UP PATHS =============================')
 Path2ImgRaw = [COHORTDIR '/R_mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
 
-if lFWHM
+if ~lFWHM
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
 else
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
@@ -48,8 +52,11 @@ disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
 
 % Directory 2 save the results
-Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '/RNullfMRI_' SubID '_' SesID '_FWHM' num2str(lFWHM)];
+% JobName=${COHORT}_${METH_ID}_AR-${ARO}_MA-${MAO}_FWHM${FWHMsize}_${TempTreMethod}
+%Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(Mord) '/' SubID '_' SesID ];
+%Path2ImgResults=[COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(Mord) '/' SubID '_' SesID ];
 
+Path2ImgResults=[Path2ImgResults '/' SubID '_' SesID];
 if ~exist(Path2ImgResults, 'dir')
 	mkdir(Path2ImgResults)
 	disp(['The directory: ' Path2ImgResults 'did not exists. I made one. '])
@@ -139,7 +146,7 @@ residY          = transpose(ResidFormingMat*dY');
 %%% BIAS REDUCTION OF AUTOREGRESSIVE MODELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-YWflag = 0; WrosleyFlag = 0; ACFflag = 0; ARMAHRflag = 0; MPparamNum = 0; 
+YWflag = 0; WrosleyFlag = 0; ACFflag = 0; ARMAHRflag = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     WrosleyFlag = 1; 
     warning('off','MATLAB:toeplitz:DiagonalConflict')
