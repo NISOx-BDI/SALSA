@@ -9,7 +9,7 @@ ARMODE=(1 2 5 10 20)
 ACMODE=(30 60)
 
 FWHMsize=5
-TempTreMethod="spline"
+TempTreMethod="dct"
 
 STRGDIR=/well/nichols/users/scf915
 COHORTDIR=${STRGDIR}/${COHORT}
