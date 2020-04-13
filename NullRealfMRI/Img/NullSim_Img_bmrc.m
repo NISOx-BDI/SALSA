@@ -3,19 +3,16 @@
 warning('off','all')
 
 % ---------------- TEST ----------------------------
-%pwdmethod = 'ACF'; %ACF AR-YW AR-W ARMAHR
-%Mord      = 30; 
-%TempTreMethod = 'spline'
-%NumTmpTrend         = 3;
+%pwdmethod  = 'ACF'; %ACF AR-YW AR-W ARMAHR
+%Mord       = 30; 
+%MPparamNum = 0;
+%TempTreMethod = 'dct'
 %SubID     = 'A00029304';
 %SesID     = 'DS2';
 %lFWHM     = 0;
 %TR        = 0.645;
 %COHORTDIR = '/well/nichols/users/scf915/ROCKLAND';
-%Path2ImgResults = [COHORTDIR '/R.PW/' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(MPparamNum) '/' SubID '_' SesID ]
-
-
-
+%Path2ImgResults = [COHORTDIR '/R.PW/TEST' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(MPparamNum)  ]
 
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
@@ -59,7 +56,7 @@ disp(['Motion params: ' Path2MC])
 Path2ImgResults=[Path2ImgResults '/' SubID '_' SesID];
 if ~exist(Path2ImgResults, 'dir')
 	mkdir(Path2ImgResults)
-	disp(['The directory: ' Path2ImgResults 'did not exists. I made one. '])
+	disp(['The directory: ' Path2ImgResults ' did not exists. I made one. '])
 end
 
 disp(['Output stuff: ' Path2ImgResults])
@@ -129,10 +126,12 @@ X = [X,MCp];
 disp(['design updated, ' num2str(size(X,2))])
 
 % Temporal trends ----------------------------------------
-TempTrend = []; 
+TempTrend = [];
+if ~exist('NumTmpTrend','var'); NumTmpTrend=[]; end;
 if any(strcmpi(TempTreMethod,{'dct','spline','poly'}))
-    [TempTrend,NUMSPLINES]   = GenerateTemporalTrends(T,TR,TempTreMethod,NumTmpTrend); % DC + Poly trends + Spline trends 
+    [TempTrend,NumTmpTrend]   = GenerateTemporalTrends(T,TR,TempTreMethod,NumTmpTrend); % DC + Poly trends + Spline trends 
     TempTrend   = TempTrend(:,2:end); % we add a column of one later.
+    
 elseif strcmpi(TempTreMethod,{'hpf'})
     if isempty(NumTmpTrend) || ~exist('NumTmpTrend','var'); NumTmpTrend=100; end; 
     hp_ff = hp_fsl(T,NumTmpTrend,TR);
@@ -300,7 +299,7 @@ if SaveImagesFlag
     for vname = VariableList
 
         tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod '_' vname{1} '.nii'];
+        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod '_' num2str(NumTmpTrend) '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
 
