@@ -29,13 +29,13 @@ do
 		rm ${CompData}.nii.gz
 	fi
 
-	if [ ! -f ${CompData}_FWHM${SmthMM}.nii ]; then
+#	if [ ! -f ${CompData}_FWHM${SmthMM}.nii ]; then
 
 		${FSLDIR}/bin/fslmaths ${CompData}.nii -kernel gauss 2.1233226 -fmean ${CompData}_FWHM${SmthMM}.nii
-		echo "SMOOTHED AND DECOMPRESSED: ${CompData}_FWHM${SmthMM}.nii"
-	elif [ ${CompData}_FWHM${SmthMM}.nii.gz ]; then
-		rm -f ${CompData}_FWHM${SmthMM}.nii.gz
-	fi
+#		echo "SMOOTHED AND DECOMPRESSED: ${CompData}_FWHM${SmthMM}.nii"
+#	elif [ ${CompData}_FWHM${SmthMM}.nii.gz ]; then
+#		rm -f ${CompData}_FWHM${SmthMM}.nii.gz
+#	fi
 
 done
 
