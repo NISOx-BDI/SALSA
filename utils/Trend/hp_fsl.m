@@ -1,4 +1,4 @@
-function filter=hp_fsl(Nscans,cut,  TR)
+function filter=hp_fsl(Nscans,cut,TR)
 %This function creates the highpass filter matrix that is used in FSL for a
 %given highpass filter cutoff.  To apply the filter to a timeseries simply
 %multiply the filter and the data (filter goes on the left side of the
