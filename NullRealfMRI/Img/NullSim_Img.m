@@ -1,11 +1,20 @@
 clear; warning('off','all')
 
-pwdmethod = 'AR-W'; %ACF AR-YW AR-W ARMAHR
-Mord      = 5; lFWHM = 0;
+pwdmethod = 'AR-YW'; %ACF AR-YW AR-W ARMAHR
+Mord      = 5; 
+lFWHM     = 0;
 SubID     = 'A00029304';
 SesID     = 'DS2'; 
 TR        = 0.645;
-TempTreMethod = 'spline'; 
+
+%TempTreMethod = 'spline'; 
+%NumTmpTrend   = 3;
+
+TempTreMethod = 'dct'; 
+NumTmpTrend   = [];
+
+
+
 
 
 % What is flowing in from the cluster:
@@ -17,6 +26,9 @@ disp(['ARmethod: ' pwdmethod])
 disp(['AR order:' num2str(Mord)])
 disp(['lFWHM: ' num2str(lFWHM)])
 %disp(['COHORT directory:' COHORTDIR])
+
+
+
 disp('=======================================')
 
 PATH2AUX='/Users/sorooshafyouni/Home/GitClone/FILM2';
@@ -32,7 +44,7 @@ disp('=====SET UP PATHS =============================')
 Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold.mpp'];
 
-if lFWHM
+if ~lFWHM
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
 else
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
@@ -45,7 +57,6 @@ disp(['Motion params: ' Path2MC])
 
 % Directory 2 save the results
 Path2ImgResults=[PATH2AUX '/ExampleData/R.mpp/RNullfMRI_' SubID '_' SesID];
-
 if ~exist(Path2ImgResults, 'dir')
 	mkdir(Path2ImgResults)
 	disp(['The directory: ' Path2ImgResults 'did not exists. I made one. '])
@@ -56,7 +67,6 @@ disp(['Output stuff: ' Path2ImgResults])
 SaveImagesFlag      = 1; 
 DoDetrendingPrior   = 0; 
 MParamNum           = 24; 
-NumTmpTrend         = 3;
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
 disp('=====LOAD THE IMAGE ===========================')
@@ -66,11 +76,7 @@ TR = InputImgStat.voxelsize(4);
 Vorig = InputImgStat.CleanedDim(1);
 V = Vorig;
 
-%%% Generate a Design Matrix %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-EDtype = 'boxcar'; 
-BCl = 20;
-EDX = GenerateED(BCl,T,TR); 
-EDX = EDX - mean(EDX); 
+if size(Y,1)~=T; Y = Y'; end; %TxV
 
 %%% DETREND %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if DoDetrendingPrior
@@ -90,17 +96,21 @@ end
 % dY = simulate(model,T,'NumPaths',nRlz)'; 
 % dY = dY - mean(dY,2); 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN MATRIX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Temporal trends
-TempTrend = []; MCp = [];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if NumTmpTrend
-    [TempTrend,NUMSPLINES]   = GenerateTemporalTrends(T,TR,TempTreMethod,NumTmpTrend); % DC + Poly trends + Spline trends 
-    TempTrend   = TempTrend(:,2:end); % we add a column of one later.
-end
-disp(['Number of temporal trends: ' num2str(NumTmpTrend)])
+%%% Generate a Design Matrix --------------------------------
+EDtype = 'boxcar'; 
+BCl = 20;
+EDX = GenerateED(BCl,T,TR); 
+EDX = EDX - mean(EDX); 
 
-% Motion parameters 
+X   = EDX;
+disp(['design updated, ' num2str(size(X,2))])
+
+% Motion parameters ----------------------------------------
+MCp = [];
 if MParamNum     == 6
     MCp = load(Path2MC);
 elseif MParamNum == 12
@@ -114,22 +124,35 @@ elseif MParamNum == 24
     MCp     = [o6MCp,so6MCp,do6MCp,ds6MCp];
 end
 disp(['Number of motion parameter: ' num2str(MParamNum)])
-    
-%
-X           = [EDX,TempTrend,MCp];
-X           = X - mean(X); % demean everything 
-ED_IDX      = 2; % where will be the expermintal design in the final X?
-%%% RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+X = [X,MCp];
+disp(['design updated, ' num2str(size(X,2))])
+
+% Temporal trends ----------------------------------------
+TempTrend = []; 
+if any(strcmpi(TempTreMethod,{'dct','spline','poly'}))
+    [TempTrend,NUMSPLINES]   = GenerateTemporalTrends(T,TR,TempTreMethod,NumTmpTrend); % DC + Poly trends + Spline trends 
+    TempTrend   = TempTrend(:,2:end); % we add a column of one later.
+elseif strcmpi(TempTreMethod,{'hpf'})
+    if isempty(NumTmpTrend) || ~exist('NumTmpTrend','var'); NumTmpTrend=100; end; 
+    hp_ff = hp_fsl(T,NumTmpTrend,TR);
+    
+    X     = hp_ff*X;    % high pass filter the design
+    dY    = hp_ff*dY;  % high pass filter the data
+end
+disp(['Detrending: ' TempTreMethod ',param: ' num2str(NumTmpTrend)])
+%
+X           = [X,TempTrend];
+disp(['design updated, ' num2str(size(X,2))])
+
+% Centre the design  ----------------------------------
+X           = X - mean(X); % demean everything 
+
+%%% RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('Get the residuals using I-XX+')
 pinvX           = pinv(X); 
 ResidFormingMat = eye(T)-X*pinvX; % residual forming matrix 
-residY          = transpose(ResidFormingMat*dY');
-
-% Idiot!
-% for vi = 1:V    
-%     if ~mod(vi,10000); disp(['Residuals ::: on voxel ' num2str(vi)]); end;
-%     residY(vi,:) = ResidFormingMat*dY(vi,:)';
-% end
+residY          = ResidFormingMat*dY;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% BIAS REDUCTION OF AUTOREGRESSIVE MODELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,55 +172,59 @@ if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
     invM_biasred = inv(M_biasred);
 elseif strcmpi(pwdmethod,'AR-YW') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    YWflag  = 1; 
-    invM_biasred = eye(Mord+1);
+    YWflag          = 1; 
+    invM_biasred    = eye(Mord+1);
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ACFflag = 1;
+    ACFflag         = 1;
 elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ARMAHRflag = 1; 
-    MPparamNum          = 1;
-    ARParamARMA         = 50;
+    ARMAHRflag      = 1; 
+    MPparamNum      = 1;  % the MA order 
+    ARParamARMA     = 50; % the higher fit in ARMA HR
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FIT A MODEL TO THE ACd DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('Fit data to the Naive model.')
 X0                                          = [ones(T,1),X];
-[Bhat_Naive,~,resNaive,Stat_Naive_SE_tmp]   = myOLS(dY',X0);
-SE_Naive      = Stat_Naive_SE_tmp.se;
-tVALUE_Naive  = Stat_Naive_SE_tmp.tval;
+[Bhat_Naive,~,resNaive,Stat_Naive_SE_tmp]   = myOLS(dY,X0);
+SE_Naive                                    = Stat_Naive_SE_tmp.se;
+tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
+[~,CPSstat_Naive,CPZ_Naive]                 = CPSUnivar(resNaive,X0);
 
-[~,CPSstat_Naive,CPZ_Naive] = CPSUnivar(resNaive,X0);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AUTOCORR & AUTOCOV %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% ACFs %%%%%%%%%%%%%%%
+disp(['Calculate the autocorrelation coefficients.'])
+[~,~,dRESacov]  = AC_fft(residY,T); % Autocovariance; VxT
+dRESacov        = dRESacov'; %TxV
+dRESacorr       = dRESacov./sum(abs(residY).^2); % Autocorrelation
+ACL             = sum(dRESacorr.^2); % Autocorrelation Length
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PREWHITEN THE RESIDULAS & ESTIMATE BIAS AND CPS %%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%% ACFs %%%%%%%%%%%%%%%
-disp(['Calculate the autocorrelation coefficients.'])
-[~,~,dRESacov]  = AC_fft(residY,T); % Autocovariance 
-dRESacorr       = dRESacov./sum(abs(residY).^2,2); % Autocorrelation
-ACL             = sum(dRESacorr.^2,2); % Autocorrelation Length
-
 %%% Preallocate memory
 Bhat_PW    = zeros(V,1);
-SE_PW      = zeros(V,1); tVALUE_PW  = zeros(V,1);
-CPSstat_PW = zeros(V,1); CPZ_PW     = zeros(V,1);
+SE_PW      = zeros(V,1); 
+tVALUE_PW  = zeros(V,1);
+CPSstat_PW = zeros(V,1); 
+CPZ_PW     = zeros(V,1);
 
+disp('Starts the voxel-wise prewhitening')
 
 for vi = 1:V
     if YWflag % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['AR-YW ::: on voxel ' num2str(vi)]); end; 
-        % Prewhiten the residuals using Yule-Walker estimates
-        %YWARparam_tmp   = AR_YW(dYorig,Mord);
-        %YWARparam(vi,:) = YWARparam_tmp;
-       
+        if ~mod(vi,5000); disp(['AR-YW ::: on voxel ' num2str(vi)]); end;        
         %AR_YW -------------------------------------------
-        ac_tmp          = dRESacorr(vi,:);    
+        ac_tmp          = dRESacorr(:,vi);    
         R_tmp           = toeplitz(ac_tmp(1:Mord));
         r_tmp           = ac_tmp(2:Mord+1);
-        %YWARparam_tmp   = pinv(R_tmp)*r_tmp';
-        YWARparam_tmp   = R_tmp\r_tmp';
+        %YWARparam_tmp   = pinv(R_tmp)*r_tmp;
+        YWARparam_tmp   = R_tmp\r_tmp;
         % ------------------------------------------------
         
         ACMat           = full(spm_Q(YWARparam_tmp,T));
@@ -207,7 +234,7 @@ for vi = 1:V
         
     elseif ACFflag % ACF - Tukey tapered %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['ACF-TUKEY ::: on voxel ' num2str(vi)]); end; 
-        acfdRES     = dRESacorr(vi,:); 
+        acfdRES     = dRESacorr(:,vi); 
         %Mord        = 2*round(sqrt(T));
         acfdRES_tt  = [1 TukeyTaperMe(acfdRES(2:end),T-1,Mord)];
         ACMat       = toeplitz(acfdRES_tt);  
@@ -217,7 +244,7 @@ for vi = 1:V
         
     elseif WrosleyFlag % Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['AR-W ::: on voxel ' num2str(vi)]); end; 
-        dRESac_adj      = (invM_biasred*dRESacov(vi,1:Mord+1)');
+        dRESac_adj      = (invM_biasred*dRESacov(1:Mord+1,vi));
         dRESac_adj      = dRESac_adj./dRESac_adj(1); % make a auto*correlation*
         
         [Ainvt,posdef]      = chol(toeplitz(dRESac_adj)); 
@@ -230,14 +257,14 @@ for vi = 1:V
         if ~mod(vi,5000); disp(['ARMA-HR ::: on voxel ' num2str(vi)]); end; 
   
         %AR_YW -------------------------------------------
-        ac_tmp              = dRESacorr(vi,:);    
+        ac_tmp              = dRESacorr(:,vi);    
         R_tmp               = toeplitz(ac_tmp(1:ARParamARMA));
         r_tmp               = ac_tmp(2:ARParamARMA+1);
-        %YWARparam_tmp       = pinv(R_tmp)*r_tmp' %
-        YWARparam_tmp       = R_tmp\r_tmp';
+        %YWARparam_tmp       = pinv(R_tmp)*r_tmp %
+        YWARparam_tmp       = R_tmp\r_tmp;
         % ------------------------------------------------
         
-        [arParam,maParam]   = ARMA_HR_ACF(residY(vi,:)',YWARparam_tmp',T,Mord,MPparamNum);
+        [arParam,maParam]   = ARMA_HR_ACF(residY(:,vi),YWARparam_tmp',T,Mord,MPparamNum);
         ACMat               = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
 
         invACMat   = inv(ACMat); % pinv is damn slow!
@@ -245,9 +272,8 @@ for vi = 1:V
     end
         
     % Make the X & Y whitened %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Ystar_YW = sqrtmVhalf*dY(vi,:)';
-    Xstar_YW = sqrtmVhalf*X;
-    
+    Ystar_YW = sqrtmVhalf*dY(:,vi);
+    Xstar_YW = sqrtmVhalf*X;   
     % Fit a model to the prewhitened system  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
     Xstar_YW                                      = [ones(T,1), Xstar_YW]; % add intercept
     [Bhat_PW_S_tmp,~,dpwRES_tmp,Stat_PW_SE_T_tmp] = myOLS(Ystar_YW,Xstar_YW);
