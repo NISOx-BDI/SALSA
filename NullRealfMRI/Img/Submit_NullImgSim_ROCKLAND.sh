@@ -1,10 +1,15 @@
 #bin/bash
 
+
+NCORES=3
 COHORT=ROCKLAND
 
 METHODLIST=(ACF AR-YW AR-W ARMAHR)
 ARMODE=(1 2 5 10 20)
-FWHMsize=0
+ACMODE=(30 60)
+
+FWHMsize=5
+TempTreMethod="spline"
 
 STRGDIR=/well/nichols/users/scf915
 COHORTDIR=${STRGDIR}/${COHORT}
@@ -22,21 +27,24 @@ mkdir -p ${SUBMITDIR}
 
 for METH_ID in ${METHODLIST[@]}
 do
-	MAO=0
-	[ $METH_ID == "ARMAHR" ]&& MAO=1
+	echo ${METH_ID}
 
-	for ARO in ${ARMODE[@]}
+	MAO=0; ARMODE0=${ARMODE[@]}
+	[ $METH_ID == "ARMAHR" ]&& MAO=1
+	[ $METH_ID == "ACF" ]&& ARMODE0=${ACMODE[@]}
+
+	for ARO in ${ARMODE0[@]}
 	do
 
-	JobName=${COHORT}_${METH_ID}_AR-${ARO}
-	SubmitterFileName="${SUBMITDIR}/SubmitMe_${COHORT}_${METH_ID}_AR-${ARO}_MA-${MAO}_FWHM${FWHMsize}.sh"
+		JobName=${COHORT}_${METH_ID}_AR-${ARO}_MA-${MAO}_FWHM${FWHMsize}_${TempTreMethod}
+		SubmitterFileName="${SUBMITDIR}/SubmitMe_${JobName}.sh"
 
-echo ${SubmitterFileName}
+		echo ${SubmitterFileName}
 
-Path2ImgResults=${COHORTDIR}/R.PW/${METH_ID}_AR-${ARO}_FWHM${FWHMsize}
-OpLog=${Path2ImgResults}/logs
+		Path2ImgResults=${COHORTDIR}/R.PW/${JobName}
+		OpLog=${Path2ImgResults}/logs
 
-mkdir -p ${OpLog}
+		mkdir -p ${OpLog}
 
 ############################################
 ############################################
@@ -44,12 +52,15 @@ cat > $SubmitterFileName << EOF
 #!/bin/bash
 #$ -cwd
 #$ -q short.qc@@short.hge
+#$ -pe shmem ${NCORES}
 #$ -o ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.out
 #$ -e ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.err
 #$ -N ${JobName}
 #$ -t 1-20 #${NUMJB}
 
-STATFILE=${OpLog}/${JobName}_\$JOB_ID_\$SGE_TASK_ID.stat
+export OMP_NUM_THREADS=${NCORES}
+
+STATFILE=${OpLog}/${JobName}_\${JOB_ID}_\${SGE_TASK_ID}.stat
 
 # The stat file
 echo 0 > \$STATFILE
@@ -64,7 +75,7 @@ SubID=\$(echo \${SubID} | awk -F"-" '{print \$2}')
 
 OCTSCRPT=\${HOME}/bin/FILM2/NullRealfMRI/Img
 cd \${OCTSCRPT}
-octave -q --eval "COHORTDIR=\"${COHORTDIR}\"; pwdmethod=\"${METH_ID}\"; lFWHM=${FWHMsize}; TR=${TR}; Mord=${ARO}; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc; quit"
+octave -q --eval "COHORTDIR=\"${COHORTDIR}\"; Path2ImgResults=\"${Path2ImgResults}\"; pwdmethod=\"${METH_ID}\"; lFWHM=${FWHMsize}; TR=${TR}; Mord=${ARO}; MPparamNum=${MAO}; TempTreMethod=\"${TempTreMethod}\"; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc; quit"
 
 # The stat file
 echo 1 > \$STATFILE
