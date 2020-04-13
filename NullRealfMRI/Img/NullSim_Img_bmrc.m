@@ -96,7 +96,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN MATRIX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+disp('++++++++++++ Construct a design matrix')
 %%% Generate a Design Matrix --------------------------------
 EDtype = 'boxcar'; 
 BCl = 20;
@@ -148,7 +148,7 @@ disp(['design updated, ' num2str(size(X,2))])
 X           = X - mean(X); % demean everything 
 
 %%% RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('Get the residuals using I-XX+')
+disp('++++++++++++Get the residuals using I-XX+')
 pinvX           = pinv(X); 
 ResidFormingMat = eye(T)-X*pinvX; % residual forming matrix 
 residY          = ResidFormingMat*dY;
@@ -184,7 +184,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FIT A MODEL TO THE ACd DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('Fit data to the Naive model.')
+disp('++++++++++++Fit data to the Naive model.')
 X0                                          = [ones(T,1),X];
 [Bhat_Naive,~,resNaive,Stat_Naive_SE_tmp]   = myOLS(dY,X0);
 SE_Naive                                    = Stat_Naive_SE_tmp.se;
@@ -196,7 +196,7 @@ tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% ACFs %%%%%%%%%%%%%%%
-disp(['Calculate the autocorrelation coefficients.'])
+disp(['++++++++++++Calculate the autocorrelation coefficients.'])
 [~,~,dRESacov]  = AC_fft(residY,T); % Autocovariance; VxT
 dRESacov        = dRESacov'; %TxV
 dRESacorr       = dRESacov./sum(abs(residY).^2); % Autocorrelation
@@ -213,7 +213,7 @@ tVALUE_PW  = zeros(V,1);
 CPSstat_PW = zeros(V,1); 
 CPZ_PW     = zeros(V,1);
 
-disp('Starts the voxel-wise prewhitening')
+disp('++++++++++++Starts the voxel-wise prewhitening')
 
 for vi = 1:V
     if YWflag % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,6 +286,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAVE THE RESULTS AS AN IMAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++Save the results.')
+
 if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     VariableList = {'Bhat_Naive','SE_Naive','tVALUE_Naive',...
@@ -299,7 +301,7 @@ if SaveImagesFlag
     for vname = VariableList
 
         tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod '_' num2str(NumTmpTrend) '_' vname{1} '.nii'];
+        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
 
