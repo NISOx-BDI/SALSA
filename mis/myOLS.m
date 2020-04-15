@@ -22,7 +22,7 @@ function [cbhat,Yhat,RES,stat] = myOLS(Y,X,contrast)
     COVX        = (X'*X);
     stat.df     = t-p;
     
-    if ~exist('contrast','var')
+    if ~exist('contrast','var') % assuming the first column is the intercept
         contrast    = zeros(1,p);
         contrast(2) = 1;
     end
