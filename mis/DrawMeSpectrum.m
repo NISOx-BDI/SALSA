@@ -1,18 +1,25 @@
 function [Xp,Yp] = DrawMeSpectrum(Y,TR,dflag)
+% Gets the spectrum of given signal Y
+% Y should be TxV
+% TR: repeatition time [default: 1]
+% dfalg: if switched, it plots the spectrum
+%
+%
+% SA, Ox, 2020
 
 if ~exist('TR','var'); TR=1; end;
 if ~exist('dflag','var'); dflag=0; end;
 
-T = numel(Y);
-Y = Y./std(Y);
-Fs = 1./TR; 
-n = 2^nextpow2(T);
-f = Fs*(0:(n/2))/n;
-FF = fft(Y,n);
-P = abs(FF/n);
+T   = size(Y,1);
+Y   = Y./std(Y);
+Fs  = 1./TR; 
+n   = 2^nextpow2(T);
+f   = Fs*(0:(n/2))/n;
+FF  = fft(Y,n);
+P   = abs(FF/n); % normalise by the number of paddings // P = abs(FF);
 
-Xp=f;
-Yp=P(1:n/2+1);
+Xp  = f;
+Yp  = P(1:n/2+1,:);
 
 if dflag
     figure; hold on; box on; grid on; 
