@@ -14,6 +14,9 @@ warning('off','all')
 %COHORTDIR = '/well/nichols/users/scf915/ROCKLAND';
 %Path2ImgResults = [COHORTDIR '/R.PW/TEST' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(MPparamNum)  ]
 
+
+
+
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
 disp(['SubID: ' SubID])
@@ -62,6 +65,7 @@ end
 disp(['Output stuff: ' Path2ImgResults])
 
 SaveImagesFlag      = 1; 
+SaveMatFileFlag     = 1; 
 DoDetrendingPrior   = 0; 
 MParamNum           = 24; 
 
@@ -104,8 +108,9 @@ EDX = GenerateED(BCl,T,TR);
 EDX = EDX - mean(EDX); 
 
 X   = EDX;
-disp(['design updated, ' num2str(size(X,2))])
+Xc  = 1; % where is the experimental design?
 
+disp(['design updated, ' num2str(size(X,2))])
 % Motion parameters ----------------------------------------
 MCp = [];
 if MParamNum     == 6
@@ -114,11 +119,13 @@ elseif MParamNum == 12
     MCp = load(Path2MC);
     MCp = [MCp,MCp.^2]; % 12 parameter motion 
 elseif MParamNum == 24
-    o6MCp   = load(Path2MC);
-    so6MCp  = o6MCp.^2;
-    do6MCp  = [o6MCp(1,:);  diff(o6MCp)]; % is this stupid?
-    ds6MCp  = [so6MCp(1,:); diff(so6MCp)];% is this stupid?
-    MCp     = [o6MCp,so6MCp,do6MCp,ds6MCp];
+    o6MCp   = load(Path2MC);  % 6 orig param
+    so6MCp  = o6MCp.^2;       % 6 square orig
+    do6MCp  = diff(o6MCp);    % 6 diff
+    do6MCp  = [ do6MCp; zeros(1,size(do6MCp,2)) ];
+    sd6MCp  = do6MCp.^2;      % 6 square of diff
+    %sd6MCp  = [ sd6MCp; zeros(1,size(sd6MCp,2)) ];
+    MCp     = [o6MCp,so6MCp,do6MCp,sd6MCp];
 end
 disp(['Number of motion parameter: ' num2str(MParamNum)])
 
@@ -131,11 +138,9 @@ if ~exist('NumTmpTrend','var'); NumTmpTrend=[]; end;
 if any(strcmpi(TempTreMethod,{'dct','spline','poly'}))
     [TempTrend,NumTmpTrend]   = GenerateTemporalTrends(T,TR,TempTreMethod,NumTmpTrend); % DC + Poly trends + Spline trends 
     TempTrend   = TempTrend(:,2:end); % we add a column of one later.
-    
 elseif strcmpi(TempTreMethod,{'hpf'})
     if isempty(NumTmpTrend) || ~exist('NumTmpTrend','var'); NumTmpTrend=100; end; 
-    hp_ff = hp_fsl(T,NumTmpTrend,TR);
-    
+    hp_ff = hp_fsl(T,NumTmpTrend,TR);    
     X     = hp_ff*X;    % high pass filter the design
     dY    = hp_ff*dY;  % high pass filter the data
 end
@@ -186,6 +191,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('++++++++++++Fit data to the Naive model.')
 X0                                          = [ones(T,1),X];
+glmcont                                     = zeros(1,size(X0,2));
+glmcont(Xc+1)                               = 1;
 [Bhat_Naive,~,resNaive,Stat_Naive_SE_tmp]   = myOLS(dY,X0);
 SE_Naive                                    = Stat_Naive_SE_tmp.se;
 tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
@@ -212,7 +219,7 @@ SE_PW      = zeros(V,1);
 tVALUE_PW  = zeros(V,1);
 CPSstat_PW = zeros(V,1); 
 CPZ_PW     = zeros(V,1);
-
+dpwRES     = zeros(T,V); 
 disp('++++++++++++Starts the voxel-wise prewhitening')
 
 for vi = 1:V
@@ -227,9 +234,9 @@ for vi = 1:V
         % ------------------------------------------------
         
         ACMat           = full(spm_Q(YWARparam_tmp,T));
-        
-        invACMat        = inv(ACMat); % pinv is damn slow!
-        sqrtmVhalf      = chol(invACMat);
+        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
+        %invACMat        = inv(ACMat); % pinv is damn slow!
+        %sqrtmVhalf      = chol(invACMat);
         
     elseif ACFflag % ACF - Tukey tapered %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['ACF-TUKEY ::: on voxel ' num2str(vi)]); end; 
@@ -237,20 +244,19 @@ for vi = 1:V
         %Mord        = 2*round(sqrt(T));
         acfdRES_tt  = [1 TukeyTaperMe(acfdRES(2:end),T-1,Mord)];
         ACMat       = toeplitz(acfdRES_tt);  
-        
-        invACMat   = inv(ACMat); % pinv is damn slow!
-        sqrtmVhalf = chol(invACMat);
+
+        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
         
     elseif WrosleyFlag % Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['AR-W ::: on voxel ' num2str(vi)]); end; 
         dRESac_adj      = (invM_biasred*dRESacov(1:Mord+1,vi));
         dRESac_adj      = dRESac_adj./dRESac_adj(1); % make a auto*correlation*
         
-        [Ainvt,posdef]      = chol(toeplitz(dRESac_adj)); 
-        p1                  = size(Ainvt,1); 
-        A                   = inv(Ainvt'); 
-        sqrtmVhalf          = toeplitz([A(p1,p1:-1:1) zeros(1,T-p1)],zeros(1,T)); 
-        sqrtmVhalf(1:p1,1:p1) = A;
+        [Ainvt,posdef]          = chol(toeplitz(dRESac_adj)); 
+        p1                      = size(Ainvt,1); 
+        A                       = inv(Ainvt'); 
+        sqrtmVhalf              = toeplitz([A(p1,p1:-1:1) zeros(1,T-p1)],zeros(1,T)); 
+        sqrtmVhalf(1:p1,1:p1)   = A;
         
     elseif ARMAHRflag % ARMA HR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['ARMA-HR ::: on voxel ' num2str(vi)]); end; 
@@ -263,25 +269,38 @@ for vi = 1:V
         YWARparam_tmp       = R_tmp\r_tmp;
         % ------------------------------------------------
         
-        [arParam,maParam]   = ARMA_HR_ACF(residY(:,vi),YWARparam_tmp',T,Mord,MPparamNum);
-        ACMat               = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
-
-        invACMat   = inv(ACMat); % pinv is damn slow!
-        sqrtmVhalf = chol(invACMat);        
+        [arParam,maParam]    = ARMA_HR_ACF(residY(:,vi),YWARparam_tmp',T,Mord,MPparamNum);
+        ACMat                = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
+        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
     end
         
     % Make the X & Y whitened %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Ystar_YW = sqrtmVhalf*dY(:,vi);
     Xstar_YW = sqrtmVhalf*X;   
+    %YvWY(vi) = corr(Ystar_YW,dY(:,vi)); % idon't know how useful that is.
     % Fit a model to the prewhitened system  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
     Xstar_YW                                      = [ones(T,1), Xstar_YW]; % add intercept
-    [Bhat_PW_S_tmp,~,dpwRES_tmp,Stat_PW_SE_T_tmp] = myOLS(Ystar_YW,Xstar_YW);
+    [Bhat_PW_S_tmp,~,dpwRES_tmp,Stat_PW_SE_T_tmp] = myOLS(Ystar_YW,Xstar_YW,glmcont);
     Bhat_PW(vi)    = Bhat_PW_S_tmp;         
     SE_PW(vi)      = Stat_PW_SE_T_tmp.se;
     tVALUE_PW(vi)  = Stat_PW_SE_T_tmp.tval;
-   
-    [~,CPSstat_PW(vi),CPZ_PW(vi)] = CPSUnivar(dpwRES_tmp,X0);    
+
+    dpwRES(:,vi)       = dpwRES_tmp;
+    
+    [~,CPSstat_PW(vi),CPZ_PW(vi)] = CPSUnivar(dpwRES_tmp,X0);
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SPECTRUM OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++Calculate the spectrum of the residuals.')
+[dpwRESXp,dpwRESYp] = DrawMeSpectrum(dpwRES,TR,0);
+dpwRESYp            = mean(dpwRESYp,2); % average across voxels
+
+clear dpwRES
+
+[resNaiveSXp,resNaiveYp] = DrawMeSpectrum(resNaive,TR,0);
+resNaiveYp               = mean(resNaiveYp,2); % average across voxels
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAVE THE RESULTS AS AN IMAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -308,7 +327,32 @@ if SaveImagesFlag
     end
 end
 
-% 4D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MAT FILES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if SaveMatFileFlag
+    GLM.df = Stat_Naive_SE_tmp.df; 
+    GLM.X  = X0;
+    GLM.C  = glmcont;
+    GLM.EDtype = EDtype;
+    GLM.EDFreq = BCl; 
+    
+    SPEC.X_RES   = resNaiveSXp;
+    SPEC.Y_RES   = resNaiveYp;
+    SPEC.X_pwRES = dpwRESXp;
+    SPEC.Y_pwRES = dpwRESYp;
+    
+    PW.dt     = TempTreMethod;
+    PW.dtl    = NumTmpTrend;
+    PW.pwmeth = pwdmethod;
+    PW.fwhm   = lFWHM;
+    PW.MAp    = MPparamNum;
+    PW.ARp    = Mord;
+    
+    MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '.mat'];
+    save(MatFileName,'GLM','SPEC','PW')
+end
+
+
+
 
 % Beta_PW_SE_S_STD    = std(Beta_PW_SE_S); 
 % Beta_PW_SE_T_MEAN   = mean(Beta_PW_SE_T);
