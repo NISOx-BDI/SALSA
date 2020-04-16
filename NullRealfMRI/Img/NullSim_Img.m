@@ -1,9 +1,10 @@
-clear; warning('off','all')
+clear; 
+%warning('on','all')
 
-pwdmethod = 'ACF'; %ACF AR-YW AR-W ARMAHR
+pwdmethod = 'AR-YW'; %ACF AR-YW AR-W ARMAHR
 Mord      = 5; 
 lFWHM     = 0;
-SubID     = 'A00029304';
+SubID     = 'A00010893';
 SesID     = 'DS2'; 
 TR        = 0.645;
 
@@ -42,7 +43,8 @@ addpath([PATH2AUX '/mis'])
 disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
 Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
-Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold.mpp'];
+%Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold.mpp'];
+Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_test/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
 
 if ~lFWHM
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
@@ -287,7 +289,7 @@ for vi = 1:V
 
     dpwRES(:,vi)       = dpwRES_tmp;
     
-    [~,CPSstat_PW(vi),CPZ_PW(vi)] = CPSUnivar(dpwRES_tmp,X0);
+    [~,CPSstat_PW(vi),CPZ_PW(vi)] = CPSUnivar(dpwRES_tmp,Xstar_YW);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
