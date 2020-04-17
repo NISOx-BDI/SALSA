@@ -12,8 +12,8 @@ function V = ARMACovMat(par,T,p,q)
     eigB=max(abs(eig(B)));
     if eigB>=1 | max(abs(a))>10
         LL=10^10;
-        warning('parameters lead to non-stationary.');
-        return
+        disp('parameters lead to non-stationary.');
+        %return
     end
  
  
