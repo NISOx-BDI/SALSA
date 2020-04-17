@@ -220,9 +220,11 @@ tVALUE_PW  = zeros(V,1);
 CPSstat_PW = zeros(V,1); 
 CPZ_PW     = zeros(V,1);
 dpwRES     = zeros(T,V); 
+nonstationaryvox = [];
 disp('++++++++++++Starts the voxel-wise prewhitening')
 
 for vi = 1:V
+    spdflag = 0;
     if YWflag % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['AR-YW ::: on voxel ' num2str(vi)]); end;        
         %AR_YW -------------------------------------------
@@ -274,6 +276,9 @@ for vi = 1:V
         [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
     end
         
+    if spdflag
+	nonstationaryvox = [nonstationaryvox vi];
+    end
     % Make the X & Y whitened %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Ystar_YW = sqrtmVhalf*dY(:,vi);
     Xstar_YW = sqrtmVhalf*X;   
@@ -320,7 +325,7 @@ if SaveImagesFlag
     for vname = VariableList
 
         tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '.nii'];
+        OutputImgStat.fname      = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
 
@@ -346,8 +351,9 @@ if SaveMatFileFlag
     PW.fwhm   = lFWHM;
     PW.MAp    = MPparamNum;
     PW.ARp    = Mord;
+    PW.nonSPD = nonstationaryvox;
     
-    MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '.mat'];
+    MatFileName = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '.mat'];
     save(MatFileName,'GLM','SPEC','PW')
 end
 
