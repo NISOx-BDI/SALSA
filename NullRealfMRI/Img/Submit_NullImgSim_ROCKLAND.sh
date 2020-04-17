@@ -6,10 +6,10 @@ COHORT=ROCKLAND
 
 METHODLIST=(ACF AR-YW AR-W ARMAHR)
 ARMODE=(1 2 5 10 20)
-ACMODE=(30 60)
+ACMODE=(5 10 15 30 60)
 
 FWHMsize=0
-TempTreMethod="poly"
+TempTreMethod="hpf"
 
 STRGDIR=/well/nichols/users/scf915
 COHORTDIR=${STRGDIR}/${COHORT}
@@ -56,7 +56,7 @@ cat > $SubmitterFileName << EOF
 #$ -o ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.out
 #$ -e ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.err
 #$ -N ${JobName}
-#$ -t 1-20 #${NUMJB}
+#$ -t 1-50 #${NUMJB}
 
 export OMP_NUM_THREADS=${NCORES}
 
