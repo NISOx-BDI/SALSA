@@ -6,7 +6,6 @@ lFWHM     = 0;
 SubID     = 'A00028185';
 SesID     = 'DS2'; 
 TR        = 0.645;
-TempTreMethod = 'spline'; 
 
 SimMord  = 50;
 
@@ -28,7 +27,6 @@ addpath([PATH2AUX '/utils/AR_YW'])
 addpath([PATH2AUX '/utils/ARMA_HR'])
 addpath([PATH2AUX '/mis'])
 
-
 disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
 Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
@@ -36,9 +34,9 @@ Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
 Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/ROCKLAND/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
 
 if ~lFWHM
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_gm_bet.nii'];
+    Path2Img = [Path2ImgDir '/prefiltered_func_data_gm_bet.nii'];
 else
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
+    Path2Img = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
 end
 
 Path2MC  = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
