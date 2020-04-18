@@ -1,6 +1,9 @@
 #clear; 
 
+% System setup 
 warning('off','all')
+randn('seed',SIDX);
+disp(['RANDN SEED CHECK:' num2str(randn(1))])
 
 #pwdmethod = 'AR-W'; %ACF AR-YW AR-W ARMAHR
 #Mord      = 5; 
@@ -69,16 +72,16 @@ MParamNum           = 24;
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
 disp('=====LOAD THE IMAGE ===========================')
 [Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean');
-T = InputImgStat.CleanedDim(2);
+Ti = InputImgStat.CleanedDim(2);
 TR = InputImgStat.voxelsize(4);
 Vorig = InputImgStat.CleanedDim(1);
 V = Vorig;
 
-if size(Y,1)~=T; Y = Y'; end; %TxV
+if size(Y,1)~=Ti; Y = Y'; end; %TxV
 %%% DETREND %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-NumTmpTrend = 1+fix(TR.*T/150);
-dY = multpolyfit(repmat(1:T,Vorig,1),Y',T,NumTmpTrend)';
+NumTmpTrend = 1+fix(TR.*Ti/150);
+dY = multpolyfit(repmat(1:Ti,Vorig,1),Y',T,NumTmpTrend)';
 dY = dY - mean(dY); 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -109,7 +112,7 @@ X           = MCp;
 X           = X - mean(X); % demean everything 
 %%% RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 pinvX            = pinv(X); 
-ResidFormingMat0 = eye(T)-X*pinvX; % residual forming matrix 
+ResidFormingMat0 = eye(Ti)-X*pinvX; % residual forming matrix 
 residY           = ResidFormingMat0*dY;
 dY               = dY - residY; % clean the data
 
@@ -149,10 +152,14 @@ end
 
 %%% ACFs %%%%%%%%%%%%%%%
 disp(['Calculate the autocorrelation coefficients.'])
-[~,~,dYacov]  = AC_fft(dY,T); % Autocovariance 
+[~,~,dYacov]  = AC_fft(dY,Ti); % Autocovariance 
 dYacov        = dYacov'; %TxV
 dYacorr       = dYacov./sum(abs(dY).^2); % Autocorrelation
 ACL           = sum(dYacorr.^2); % Autocorrelation Length
+
+%% RAM SAVE %%
+clear dY Y
+%%%%%%%%%%%%%%
 
 %%% Preallocate memory
 Bhat_PW    = zeros(V,1);
@@ -187,6 +194,8 @@ for vi = 1:V
     residY      	    = ResidFormingMat*sY_tmp;
     residY     	 	    = residY-mean(residY); 
     [dRESacorr,~,dRESacov]  = AC_fft(residY',T);
+    dRESacorr = dRESacorr';
+    dRESacov  = dRESacov';
     
     %dRESacorr  = autocorr(residY,T-1); % pretty fast on single time series, autocorr doesn't exist in Octave -- WTF!
     %dRESacov   = dRESacorr.*sum(abs(residY).^2);
@@ -273,12 +282,12 @@ tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
 % SPECTRUM OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('++++++++++++Calculate the spectrum of the residuals.')
-[dpwRESXp,dpwRESYp] = DrawMeSpectrum(dpwRES,TR,0);
+[dpwRESXp,dpwRESYp,fs_PW] = DrawMeSpectrum(dpwRES,TR,0);
 dpwRESYp            = mean(dpwRESYp,2); % average across voxels
 
 clear dpwRES
 
-[resNaiveSXp,resNaiveYp] = DrawMeSpectrum(resNaive,TR,0);
+[resNaiveSXp,resNaiveYp,fs_Naive] = DrawMeSpectrum(resNaive,TR,0);
 resNaiveYp               = mean(resNaiveYp,2); % average across voxels
 
 
@@ -289,7 +298,8 @@ if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     VariableList = {'SE_PW','SE_Naive',...
 		'Bhat_Naive','Bhat_PW',...
-		'tVALUE_Naive','tVALUE_PW'};
+		'tVALUE_Naive','tVALUE_PW',...
+ 		'fs_PW','fs_Naive'};
     OutputImgStat            = InputImgStat.spmV(1);
     OutputImgStat.Removables = InputImgStat.Removables;
 
@@ -325,3 +335,5 @@ if SaveMatFileFlag
     MatFileName = [Path2ImgResults '/Sim'  num2str(SIDX)  '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '.mat'];
     save(MatFileName,'GLM','SPEC','PW')
 end
+
+disp('--DONE--')
