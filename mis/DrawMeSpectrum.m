@@ -1,4 +1,4 @@
-function [Xp,Yp] = DrawMeSpectrum(Y,TR,dflag)
+function [Xp,Yp,specflat] = DrawMeSpectrum(Y,TR,dflag)
 % Gets the spectrum of given signal Y
 % Y should be TxV
 % TR: repeatition time [default: 1]
@@ -16,10 +16,14 @@ Fs  = 1./TR;
 n   = 2^nextpow2(T);
 f   = Fs*(0:(n/2))/n;
 FF  = fft(Y,n);
-P   = abs(FF/n); % normalise by the number of paddings // P = abs(FF);
+P   = abs(FF).^2/n; % normalise by the number of paddings // P = abs(FF);
 
 Xp  = f;
 Yp  = P(1:n/2+1,:);
+
+nn       = n/2+1;
+gmean    = exp(sum(log(Yp(2:end,:)))./nn);
+specflat = gmean./mean(Yp(2:end,:));
 
 if dflag
     figure; hold on; box on; grid on; 
