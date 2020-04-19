@@ -2,6 +2,9 @@
 
 
 NCORES=3
+NRLZ=500
+T=900
+
 COHORT=ROCKLAND
 
 METHODLIST=(ACF AR-YW AR-W ARMAHR)
@@ -21,11 +24,10 @@ TRs=$(cat ${Path2ImgRaw}/task-rest_acq-645_bold.json | grep RepetitionTime | awk
 TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
 SesID=DS2
 SubID=A00028185
-T=900
 
 ############################################
 
-SUBMITDIR=/users/nichols/scf915/bin/FILM2/NullSynfMRI/SIM_${COHORT}_${TR}_Submitters
+SUBMITDIR=/users/nichols/scf915/bin/FILM2/NullSynfMRI/SIM_${COHORT}_${T}_${TR}_Submitters
 mkdir -p ${SUBMITDIR}
 
 for METH_ID in ${METHODLIST[@]}
@@ -54,12 +56,15 @@ do
 cat > $SubmitterFileName << EOF
 #!/bin/bash
 #$ -cwd
-#$ -q short.qc@@short.hge
+#$ -q short.qe
 #$ -pe shmem ${NCORES}
 #$ -o ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.out
 #$ -e ${OpLog}/${JobName}_\\\$JOB_ID_\\\$TASK_ID.err
 #$ -N ${JobName}
-#$ -t 1-50 #${NUMJB}
+#$ -t 1-${NRLZ}
+
+# #$ -q short.qc@@short.hge
+
 
 set -e
 
