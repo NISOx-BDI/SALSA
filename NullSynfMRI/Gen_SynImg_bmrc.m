@@ -5,20 +5,21 @@ warning('off','all')
 randn('seed',SIDX);
 disp(['RANDN SEED CHECK:' num2str(randn(1))])
 
-#pwdmethod = 'AR-W'; %ACF AR-YW AR-W ARMAHR
-#Mord      = 5; 
-#lFWHM     = 0;
-#SIDX   	  = 1
-#SubID     = 'A00028185';
-#SesID     = 'DS2'; 
-#TR        = 0.645;
-#COHORTDIR = 
-#Path2ImgResults =
+%pwdmethod = 'AR-W'; %ACF AR-YW AR-W ARMAHR
+%Mord      = 5; 
+%lFWHM     = 0;
+%SIDX   	  = 1
+%SubID     = 'A00028185';
+%SesID     = 'DS2'; 
+%TR        = 0.645;
+%COHORTDIR = 
+%Path2ImgResults =
 
 SimMord  = 50;
 
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
+disp(['To simulate time series of: ' num2str(T)])
 disp(['SubID: ' SubID])
 disp(['SesID: ' SesID])
 disp(['TR: ' num2str(TR)])
@@ -77,11 +78,11 @@ TR = InputImgStat.voxelsize(4);
 Vorig = InputImgStat.CleanedDim(1);
 V = Vorig;
 
-if size(Y,1)~=Ti; Y = Y'; end; %TxV
+if size(Y,1)~=Ti; Y = Y'; end; %TixV
 %%% DETREND %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 NumTmpTrend = 1+fix(TR.*Ti/150);
-dY = multpolyfit(repmat(1:Ti,Vorig,1),Y',T,NumTmpTrend)';
+dY = multpolyfit(repmat(1:Ti,Vorig,1),Y',Ti,NumTmpTrend)';
 dY = dY - mean(dY); 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -246,7 +247,7 @@ for vi = 1:V
         YWARparam_tmp       = R_tmp\r_tmp;
         % ------------------------------------------------
         
-        [arParam,maParam]    = ARMA_HR_ACF(residY(:,vi),YWARparam_tmp',T,Mord,MPparamNum);
+        [arParam,maParam]    = ARMA_HR_ACF(residY,YWARparam_tmp',T,Mord,MPparamNum);
         ACMat                = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
         [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
     end
@@ -308,7 +309,7 @@ if SaveImagesFlag
         OutputImgStat.fname      = [Path2ImgResults '/Sim'  num2str(SIDX)  '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum)  '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
-
+	system(['gzip ' OutputImgStat.fname])
     end
 end
 
