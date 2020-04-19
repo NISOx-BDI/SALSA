@@ -36,7 +36,7 @@ if maOrder < 1
 end
 maxOrder = max(arOrder,maOrder);
 %trajLength = length(traj);
-if trajLength < 25*maxOrder
+if trajLength < 20*maxOrder
     disp('--hannRiss: Length of trajectory should be at least 25 times larger than maximum model order!');
     errFlag = 1;
 end
