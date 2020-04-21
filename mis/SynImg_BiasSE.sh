@@ -5,17 +5,15 @@
 #
 #
 
+#set -e
 
-
-set -e
-
-T=200
+T=900
 TR=645
 COHORT=ROCKLAND
 
 fwhml=0
 
-pwmethodlist=(AR-W AR-YW ACF ARMAHR)
+pwmethodlist=(AR-W ACF ARMAHR AR-YW)
 
 for pwmethod in ${pwmethodlist[@]}
 do
@@ -24,7 +22,7 @@ do
 	[ $pwmethod == ARMAHR ]&& MAO=1
 
 	AROlist=(1 2 5 10 20)
-	[ $pwmethod == ACF ]&& AROlist=(5 10 15 30 60)
+	[ $pwmethod == ACF ]&& AROlist=(5 10 15 $(echo "sqrt($T)" | bc) $(echo "2*sqrt($T)" | bc))
 
 	for ARO in ${AROlist[@]}
 	do
@@ -50,6 +48,13 @@ do
 		fslmaths ${SIMDIR}/mse_Bhat_PW.nii.gz -sub ${SIMDIR}/STD_Bhat_PW.nii.gz -div ${SIMDIR}/STD_Bhat_PW.nii.gz ${BiasFileName}
 
 		echo "Bias: ${BiasFileName}"
+
+
+		fslmerge -t ${SIMDIR}/tVALUE_PW_${T}_${TR}_${pwmethod}_AR${ARO}_MA${MAO}_FWHM${fwhml}.nii.gz ${SIMDIR}/NullImg_*/Sim*_EDboxcar_20_${pwmethod}_AR${ARO}_MA${MAO}_tVALUE_PW.nii.gz
+		fslmerge -t ${SIMDIR}/tVALUE_Naive_${T}_${TR}_${pwmethod}_AR${ARO}_MA${MAO}_FWHM${fwhml}.nii.gz ${SIMDIR}/NullImg_*/Sim*_EDboxcar_20_${pwmethod}_AR${ARO}_MA${MAO}_tVALUE_Naive.nii.gz
+
+
+
 	done
 done
 
