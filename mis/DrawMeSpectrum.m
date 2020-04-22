@@ -21,6 +21,7 @@ P   = abs(FF).^2/n; % normalise by the number of paddings // P = abs(FF);
 Xp  = f;
 Yp  = P(1:n/2+1,:);
 
+%--- spectrum flattness
 nn       = n/2+1;
 gmean    = exp(sum(log(Yp(2:end,:)))./nn);
 specflat = gmean./mean(Yp(2:end,:));
