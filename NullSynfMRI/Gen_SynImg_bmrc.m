@@ -114,8 +114,7 @@ X           = X - mean(X); % demean everything
 %%% RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 pinvX            = pinv(X); 
 ResidFormingMat0 = eye(Ti)-X*pinvX; % residual forming matrix 
-residY           = ResidFormingMat0*dY;
-dY               = dY - residY; % clean the data
+dY               = ResidFormingMat0*dY;
 
 pinvEDX           = pinv(EDX); 
 ResidFormingMat  = eye(T)-EDX*pinvEDX; 
