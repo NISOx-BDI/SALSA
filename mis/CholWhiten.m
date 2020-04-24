@@ -10,7 +10,7 @@ function [Vhalf,spdflag] = CholWhiten(COVmat)
       R            = chol(spdCOVmat);
   end
   Vhalf         = inv(R');
-  %W             = pinv(R); %FUCK!
+  %W             = pinv(R); 
 end
 
 
