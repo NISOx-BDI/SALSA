@@ -2,6 +2,7 @@
 
 warning('off','all')
 
+
 % ---------------- TEST ----------------------------
 %pwdmethod  = 'ACF'; %ACF AR-YW AR-W ARMAHR
 %Mord       = 30; 
@@ -162,22 +163,13 @@ residY          = ResidFormingMat*dY;
 %%% BIAS REDUCTION OF AUTOREGRESSIVE MODELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-YWflag = 0; WrosleyFlag = 0; ACFflag = 0; ARMAHRflag = 0; MPparamNum = 0; 
+ACFadjflag = 0; WrosleyFlag = 0; ACFflag = 0; ARMAHRflag = 0; MPparamNum = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    WrosleyFlag = 1; 
-    warning('off','MATLAB:toeplitz:DiagonalConflict')
-    M_biasred   = zeros(Mord+1);
-    for i=1:(Mord+1)
-        Di                  = (diag(ones(1,T-i+1),i-1)+diag(ones(1,T-i+1),-i+1))/(1+(i==1));
-        for j=1:(Mord+1)
-           Dj               = (diag(ones(1,T-j+1),j-1)+diag(ones(1,T-j+1),-j+1))/(1+(j==1));
-           M_biasred(i,j)   = trace( ResidFormingMat*Di*ResidFormingMat*Dj )/(1+(i>1));
-        end
-    end
-    invM_biasred = inv(M_biasred);
-elseif strcmpi(pwdmethod,'AR-YW') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    YWflag          = 1; 
-    invM_biasred    = eye(Mord+1);
+    WrosleyFlag = 1;     
+    invM_biasred = ACFBiasAdj(ResidFormingMat,T,Mord);    
+elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ACFadjflag          = 1; 
+    invM_biasred = ACFBiasAdj(ResidFormingMat,T,Mord); 
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ACFflag         = 1;
 elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,6 +196,8 @@ tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
 
 %%% ACFs %%%%%%%%%%%%%%%
 disp(['++++++++++++Calculate the autocorrelation coefficients.'])
+%residY          = residY-mean(residY); 
+residY          = residY-repmat(mean(residY),T,1);
 [~,~,dRESacov]  = AC_fft(residY,T); % Autocovariance; VxT
 dRESacov        = dRESacov'; %TxV
 dRESacorr       = dRESacov./sum(abs(residY).^2); % Autocorrelation
@@ -225,40 +219,20 @@ disp('++++++++++++Starts the voxel-wise prewhitening')
 
 for vi = 1:V
     spdflag = 0;
-    if YWflag % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['AR-YW ::: on voxel ' num2str(vi)]); end;        
-        %AR_YW -------------------------------------------
-        ac_tmp          = dRESacorr(:,vi);    
-        R_tmp           = toeplitz(ac_tmp(1:Mord));
-        r_tmp           = ac_tmp(2:Mord+1);
-        %YWARparam_tmp   = pinv(R_tmp)*r_tmp;
-        YWARparam_tmp   = R_tmp\r_tmp;
-        % ------------------------------------------------
+    if ACFadjflag % ACF, Tapered, Adjusted %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if ~mod(vi,5000); disp([ pwdmethod ' ::: on voxel ' num2str(vi)]); end; 
         
-        ACMat           = full(spm_Q(YWARparam_tmp,T));
-        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
-        %invACMat        = inv(ACMat); % pinv is damn slow!
-        %sqrtmVhalf      = chol(invACMat);
+        [sqrtmVhalf,spdflag] = ACF_ResPWm(dRESacov(:,vi),Mord,invM_biasred,1);
+           
+    elseif ACFflag % ACF - Tapered, Adjusted %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if ~mod(vi,5000); disp([ pwdmethod ' ::: on voxel ' num2str(vi)]); end; 
         
-    elseif ACFflag % ACF - Tukey tapered %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['ACF-TUKEY ::: on voxel ' num2str(vi)]); end; 
-        acfdRES     = dRESacorr(:,vi); 
-        %Mord        = 2*round(sqrt(T));
-        acfdRES_tt  = [1 TukeyTaperMe(acfdRES(2:end),T-1,Mord)];
-        ACMat       = toeplitz(acfdRES_tt);  
-
-        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
+        [sqrtmVhalf,spdflag] = ACF_ResPWm(dRESacov(:,vi),Mord,[],1);
         
     elseif WrosleyFlag % Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['AR-W ::: on voxel ' num2str(vi)]); end; 
-        dRESac_adj      = (invM_biasred*dRESacov(1:Mord+1,vi));
-        dRESac_adj      = dRESac_adj./dRESac_adj(1); % make a auto*correlation*
+        if ~mod(vi,5000); disp([ pwdmethod ' ::: on voxel ' num2str(vi)]); end; 
         
-        [Ainvt,posdef]          = chol(toeplitz(dRESac_adj)); 
-        p1                      = size(Ainvt,1); 
-        A                       = inv(Ainvt'); 
-        sqrtmVhalf              = toeplitz([A(p1,p1:-1:1) zeros(1,T-p1)],zeros(1,T)); 
-        sqrtmVhalf(1:p1,1:p1)   = A;
+        [sqrtmVhalf,spdflag] = AR_ResPWm(dRESacov(:,vi),Mord,invM_biasred);
         
     elseif ARMAHRflag % ARMA HR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~mod(vi,5000); disp(['ARMA-HR ::: on voxel ' num2str(vi)]); end; 
@@ -275,9 +249,9 @@ for vi = 1:V
         ACMat                = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
         [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
     end
-        
+
     if spdflag
-	nonstationaryvox = [nonstationaryvox vi];
+        nonstationaryvox = [nonstationaryvox vi];
     end
     % Make the X & Y whitened %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Ystar_YW = sqrtmVhalf*dY(:,vi);
@@ -328,7 +302,7 @@ if SaveImagesFlag
         OutputImgStat.fname      = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
-
+        system(['gzip ' OutputImgStat.fname]);
     end
 end
 
@@ -358,126 +332,3 @@ if SaveMatFileFlag
 end
 
 
-
-
-% Beta_PW_SE_S_STD    = std(Beta_PW_SE_S); 
-% Beta_PW_SE_T_MEAN   = mean(Beta_PW_SE_T);
-% 
-% Bhat_NAIVE_S_STD      = std(Bhat_Naive_S); 
-% Beta_NAIVE_SE_T_MEAN  = mean(Beta_Naive_SE_T); 
-
-% save(['R/NullSim_Univar_Biases_' pwdmethod '_AR' num2str(Mord) '.mat'],...
-%     'Beta_PW_SE_S','rngid','Beta_PW_SE_T','Bhat_Naive_S','Beta_Naive_SE_T',...
-%     'CPSstat_Naive','CPZ_Naive','CPSstat_PW','CPZ_PW',...
-%     'dY','Y','T','TR')
-
-% BetaBias = @(Truth_MC,Estimated_TH) ((Estimated_TH-Truth_MC)./Truth_MC).*100;
-% fh = figure; 
-% hold on; grid on; box on; 
-% title('[THEORETICAL - (TRUE) SIMULATION]/ (TRUE) SIMULATION x 100')
-% bh = bar([BetaBias(Bhat_NAIVE_S_STD,Beta_NAIVE_SE_T_MEAN),BetaBias(Beta_PW_SE_S_STD,Beta_PW_SE_T_MEAN)]);
-% fh.Children.XTick=1:2;
-% fh.Children.XTickLabel = {'Naive','Prewhitened'};
-% ylabel('Bias in SE of $\hat\beta$','Interpreter','latex')
-
-
-%Sanity check
-% for i = 1:1000
-%     Y=randn(1,900); 
-%     Bhat_tmp = X\Y'; sanitycheck: [b,c,d] = glmfit(Xdpw,YYYdpw);
-%     Yhat = X*Bhat_tmp;
-%     res  = Y'-Yhat;
-%     
-%     Bhat(i) = Bhat_tmp;
-% 
-%     Bhat_SE(i) = sqrt(((res'*res))./(X'*X)/(T-2));
-% end
-
-% if WrosleyFlag
-%     M_biasred=zeros(ARord+1);
-%     for i=1:(ARord+1)
-%         Di=(diag(ones(1,T-i+1),i-1)+diag(ones(1,T-i+1),-i+1))/(1+(i==1));
-%         for j=1:(ARord+1)
-%            Dj=(diag(ones(1,T-j+1),j-1)+diag(ones(1,T-j+1),-j+1))/(1+(j==1));
-%            M_biasred(i,j)=trace(ResidFormingMat*Di*ResidFormingMat*Dj)/(1+(i>1));
-%         end
-%     end
-%     invM_biasred = inv(M_biasred);
-% else
-%     invM_biasred = eye(ARord+1);
-% end
-% 
-% dpwRES      = zeros(V,T); 
-
-%%% PCA on the RAW Data %%%%%%%%%%%%%%%%%%
-% the data has already been dmeaned inside CleanNIFTI function. 
-% [EigCovMat,PCs,LTfac,~,VarExp,mu]=pca(Y');
-% 
-% fh_pca = figure('position',[50,500,1000,600]); 
-% hold on; 
-% for icp=1:10
-%     subplot(5,2,icp); hold on; grid on; box on
-%     title(['PC ' num2str(icp) ' , VE: ' num2str(VarExp(icp))])
-%     plot(PCs(:,icp)); xlim([0 T])
-% end
-% set(fh_pca,'color','w')
-
-%50,9000,4000,35000
-%idxY = 35000;
-% dt_examples_fh = figure('position',[50,500,600,600]);
-% ii = 1; 
-% for idxY = [50,9000,4000,35000]
-%     subplot(2,2,ii)
-%     hold on; box on; grid on; 
-%     title('Detrending')
-%     plot(Y(idxY,:));
-%     plot(dY(idxY,:));
-%     xlim([0 T])
-%     legend({'Raw BOLD','Deterended BOLD'})
-%     ylabel('a.u.'); xlabel('Scan')
-%     ii = ii + 1; 
-% end
-% set(dt_examples_fh,'color','w')
-% export_fig(dt_examples_fh,'RFig/dY.png')
-
-%%% PCA on the deterended Data %%%%%%%%%%%
-% [dEigCovMat,dPCs,dLTfac,~,dVarExp,dmu]=pca(dY');
-% 
-% fh_dpca = figure('position',[50,500,1000,600]); 
-% hold on; 
-% for icp=1:10
-%     subplot(5,2,icp); hold on; grid on; box on
-%     title(['PC ' num2str(icp) ' , VE: ' num2str(dVarExp(icp))])
-%     
-%     plot(dPCs(:,icp)); xlim([0 T])
-% end
-% set(fh_dpca,'color','w')
-
-%%% ESTIMATE AR %%%%%%%%%%%%%%%%%%%%%%%%%%
-% arp = 20; 
-% dARp = AR_YW_voxel(dY,T,arp);
-
-% [ARdEigCovMat,ARdPCs,ARdLTfac,~,ARdVarExp,ARdmu]=pca(dARp'-mean(dARp'));
-% 
-% fh_ARdpca = figure('position',[50,500,1000,600]); 
-% hold on; 
-% for icp=1:10
-%     subplot(5,2,icp); hold on; grid on; box on
-%     title(['PC of AR coeffs ' num2str(icp) ' , VE: ' num2str(ARdVarExp(icp))])
-%     
-%     plot(ARdPCs(:,icp)); xlim([0 arp])
-% end
-% set(fh_ARdpca,'color','w')
-
-% AR_fh = figure('position',[50,500,1200,500]);
-% imagesc(dARp')
-% hold on; 
-% title('AR(20) of deterended voxel time series.')
-% colorbar; xlabel('voxels'); ylabel('AR coefficients')
-% set(AR_fh,'color','w')
-
-%%%% SAVE FIGURES %%%%%%%%%%%%%%%%%%%%%%%
-% export_fig(fh_pca,'RFig/PC10.png')
-% export_fig(fh_dpca,'RFig/dPC10.png')
-% export_fig(AR_fh,'RFig/ARfig.png')
-% export_fig(fh_ARdpca,'RFig/PCAAR20.png')
