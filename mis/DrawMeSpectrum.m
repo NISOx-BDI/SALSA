@@ -13,22 +13,25 @@ if ~exist('dflag','var'); dflag=0; end;
 T   = size(Y,1);
 Y   = Y./std(Y);
 Fs  = 1./TR; 
-n   = 2^nextpow2(T);
-f   = Fs*(0:(n/2))/n;
-FF  = fft(Y,n);
-P   = abs(FF).^2/n; % normalise by the number of paddings // P = abs(FF);
+%orig ===
+% n   = 2^nextpow2(T); % this will be done in fft
+% f   = Fs*(0:(n/2))/n;
+% FF  = fft(Y,n);
+%==
+Xp   = Fs*(0:(T/2))/T; % that is freq range
+FF  = fft(Y);
+P   = abs(FF).^2/T; % normalise by the number of paddings // P = abs(FF);
 
-Xp  = f;
-Yp  = P(1:n/2+1,:);
+Yp  = P(1:T/2+1,:);
 
 %--- spectrum flattness
-nn       = n/2+1;
+nn       = T/2+1;
 gmean    = exp(sum(log(Yp(2:end,:)))./nn);
 specflat = gmean./mean(Yp(2:end,:));
 
 if dflag
     figure; hold on; box on; grid on; 
-    plot(f,P(1:n/2+1)) 
+    plot(Xp,P(1:n/2+1)) 
 end
 
 end
