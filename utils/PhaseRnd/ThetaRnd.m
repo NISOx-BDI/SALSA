@@ -1,10 +1,11 @@
-function sY = ThetaRnd(Y,T)
+function sY = ThetaRnd(Y,T,corrflag)
 %
-% Generate time series using phase randomisation. 
+% Generate surrogate time series using phase randomisation. 
 % 
-% Y: should be a TxV matrix  
-% T: Number of datapoints. Must be odd
-% 
+% Y        : should be a TxV matrix  
+% T        : Number of datapoints. Must be odd
+% corrflag : if unswitched, then it break the cross-corr structures [default: 1]
+%
 % Reference:
 % 
 % https://uk.mathworks.com/matlabcentral/fileexchange/32621-phase-randomization
@@ -23,31 +24,38 @@ function sY = ThetaRnd(Y,T)
 
 
 % check the input 
-if ismember(size(Y),T); erorr('ThetaRnd:: Check input.'); end;
+if ismember(size(Y),T); erorr('ThetaRnd:: Check input.');       end;
 if rem(T,2)==0; erorr('ThetaRnd:: time series should be odd.'); end;
-if size(Y,1)~=T; Y=Y'; end; 
+if size(Y,1)~=T; Y=Y';                                          end; 
+if nargin<3; corrflag = 1;                                      end; 
 
-[T,nts] = size(Y);
+[T,nts]     = size(Y);
 
 % Get parameters
 len_ser     = (T-1)/2;
-RightSide   = 2:len_ser+1; 
-LeftSide    = len_ser+2:T;
+RHS_idx     = 2:len_ser+1; % Is this because the first phase is zero?!
+LHS_idx     = len_ser+2:T;
 
-% Fourier transform of the original dataset
-fft_recblk = fft(Y);
+% DFT
+Y_dft     = fft(Y);
 
 % Generate random phases between 0-2\pi
-RndPhase         = exp(2*pi*1i*rand(len_ser,1));
-RndPhase_RIGHT   = repmat(RndPhase,1,nts);
+if corrflag
+    RndPhase         = exp(2*pi*1i*rand([len_ser,1]));
+    RndPhase_RIGHT   = repmat(RndPhase,1,nts);
+else
+    RndPhase_RIGHT   = exp(2.*pi.*1i.*rand([len_ser,nts]));
+end
+    
 % Phase should be symmetrised, so flip and use conjugate on the complex numbers
 RndPhase_LEFT    = conj(flipud(RndPhase_RIGHT));
 
-% Randomize all the time series simultaneously
-fft_recblk_surr              = fft_recblk;
-fft_recblk_surr(RightSide,:) = fft_recblk(RightSide,:).*RndPhase_RIGHT;
-fft_recblk_surr(LeftSide,:)  = fft_recblk(LeftSide,:).*RndPhase_LEFT;
+% Use random phases. If needed to break the cross-corr structure, use
+% random order of phases, probablu usin permute.m?
+Yr_dft             = Y_dft;
+Yr_dft(RHS_idx,:)  = Y_dft(RHS_idx,:).*RndPhase_RIGHT;
+Yr_dft(LHS_idx,:)  = Y_dft(LHS_idx,:).*RndPhase_LEFT;
 
-% Inverse transform
-sY= real(ifft(fft_recblk_surr));
+% ifft
+sY= real(ifft(Yr_dft));
 
