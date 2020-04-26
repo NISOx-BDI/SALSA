@@ -1,5 +1,25 @@
 clear
 
+SubID     = 'A00027167';
+SesID     = 'DS2'; 
+disp('=======================================')
+PATH2AUX='/Users/sorooshafyouni/Home/GitClone/FILM2';
+addpath([PATH2AUX '/utils/Trend'])
+addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+%12487
+disp('=====SET UP PATHS =============================')
+%Raw Images (MMP feat output)
+Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
+%Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold.mpp'];
+Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_test/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
+Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
+
+
+
+
+
+
+
 T = 500; 
 
 t  = 1:T;

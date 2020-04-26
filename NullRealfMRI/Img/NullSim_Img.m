@@ -1,10 +1,10 @@
 clear; 
 %warning('on','all')
 
-pwdmethod = 'ACFadj'; %ACF AR-YW AR-W ARMAHR
+pwdmethod = 'ACF'; %ACF AR-YW AR-W ARMAHR
 Mord      = 20; 
 lFWHM     = 0;
-SubID     = 'A00027167';
+SubID     = 'A00034193';
 SesID     = 'DS2'; 
 TR        = 0.645;
 
@@ -43,10 +43,10 @@ addpath([PATH2AUX '/mis'])
 disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
 Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
-Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_test/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
-
+%Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_test/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
+Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/ROCKLAND/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
 if ~lFWHM
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
+    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii.gz'];
 else
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
 end
@@ -71,12 +71,27 @@ DoDetrendingPrior   = 0;
 MParamNum           = 24; 
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
-disp('=====LOAD THE IMAGE ===========================')
-[Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean');
+% ----------------------------------------------
+
+CLK	 = fix(clock);
+tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
+mkdir(tmpdir)
+disp(['Unzip into: ' tmpdir ])
+randtempfilename=[tmpdir '/prefilt_tmp_' SubID '_' num2str(randi(50)) num2str(CLK(end)+randi(10)) '.nii'];
+system(['gunzip -c ' Path2Img ' > ' randtempfilename]); %gunzip function in Octave deletes the source file in my version!
+
+[Y,InputImgStat]=CleanNIFTI_spm(randtempfilename,'demean');
+
+disp(['Remove the temp directory: ' tmpdir])
+%rmdir(tmpdir,'s')
+system(['rm -rf ' tmpdir])
+%-----------------------------------------------
+
 T = InputImgStat.CleanedDim(2);
 TR = InputImgStat.voxelsize(4);
 Vorig = InputImgStat.CleanedDim(1);
 V = Vorig;
+
 
 if size(Y,1)~=T; Y = Y'; end; %TxV
 

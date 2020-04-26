@@ -1,4 +1,4 @@
-function sY = ThetaRnd(Y,T,corrflag)
+function sY = ThetaRnd(Y,T,corrflag,seedid)
 %
 % Generate surrogate time series using phase randomisation. 
 % 
@@ -24,12 +24,19 @@ function sY = ThetaRnd(Y,T,corrflag)
 
 
 % check the input 
-if ismember(size(Y),T); erorr('ThetaRnd:: Check input.');       end;
-if rem(T,2)==0; erorr('ThetaRnd:: time series should be odd.'); end;
-if size(Y,1)~=T; Y=Y';                                          end; 
-if nargin<3; corrflag = 1;                                      end; 
+if ~any(ismember(size(Y),T)); error('ThetaRnd:: Check input.'); end;
+if size(Y,1)~=T; Y = Y';                                        end; 
+if nargin<3 || isempty(corrflag); corrflag = 1;                 end; 
+if nargin==4; rand('seed',seedid);                              end;
+
 
 [T,nts]     = size(Y);
+
+if ~mod(T,2) % if the time series are even, exclude the end point from analysis
+    ETP = Y(end,:); 
+    Y   = Y(1:end-1,:);
+    T   = T-1;
+end
 
 % Get parameters
 len_ser     = (T-1)/2;
@@ -57,5 +64,5 @@ Yr_dft(RHS_idx,:)  = Y_dft(RHS_idx,:).*RndPhase_RIGHT;
 Yr_dft(LHS_idx,:)  = Y_dft(LHS_idx,:).*RndPhase_LEFT;
 
 % ifft
-sY= real(ifft(Yr_dft));
+sY= [real(ifft(Yr_dft)); ETP];
 
