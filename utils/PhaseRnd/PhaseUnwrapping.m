@@ -1,12 +1,12 @@
 
 % % ------- A simple cosine wave
 % 
-% fc      = 10;%frequency of the cosine wave
-% fs      = 32*fc;%sampling frequency with oversampling factor 32
-% t       = 0:1/fs:2-1/fs;    %2 seconds duration
-% phi     = 0; % no phase shift for time being
-% xorig   = cos(2*pi*fc*t+phi);
-% xorig   = xorig./std(xorig);
+fc      = 10;%frequency of the cosine wave
+fs      = 32*fc;%sampling frequency with oversampling factor 32
+t       = 0:1/fs:2-1/fs;    %2 seconds duration
+phi     = 5; % no phase shift for time being
+xorig   = cos(2*pi*fc*t+phi);
+xorig   = xorig./std(xorig);
 % 
 % figure; 
 % hold on;

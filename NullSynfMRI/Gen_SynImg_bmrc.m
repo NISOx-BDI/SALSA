@@ -45,11 +45,11 @@ disp('=====SET UP PATHS =============================')
 Path2ImgRaw=[COHORTDIR '/R_mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
 
-#if ~lFWHM
+%if ~lFWHM
 Path2Img = [Path2ImgDir '/prefiltered_func_data_gm_bet.nii'];
-#else
-#    Path2Img = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
-#end
+%else
+%    Path2Img = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
+%end
 
 Path2MC  = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
