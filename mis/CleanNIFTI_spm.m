@@ -91,6 +91,8 @@ if ischar(V0)
     elseif isempty(strfind(ffname,'.dtseries')) || ~isempty(strfind(ffname,'.nii'))
         if verbose; disp(['--File is NIFTI: ' ffname ffext]); end;
         
+        
+        
         Vstruct   = spm_vol(V0);
         V2        = spm_read_vols(Vstruct);
         dims      = Vstruct(1).private.dat.dim;
