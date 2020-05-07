@@ -37,7 +37,7 @@ function V = ARMACovMat(par,T,p,q)
  
         C=(eye((m+q)^2)-kron(CC,CC))\Ve(:);
         C=reshape(C,m+q,m+q);
-        Vstationary=C(1:m,1:m);     
+        Vstationary=C(1:m,1:m);
     else
         B=diag(ones(p-1,1),-1);
         B(1,:)=b;
@@ -48,8 +48,8 @@ function V = ARMACovMat(par,T,p,q)
         C=(eye(p^2)-kron(B,B))\Ve(:);
         Vstationary=reshape(C,p,p);
     end
-    
-    
+
+
     % MA component
     AA=eye(q+1);
     for i=1:q
