@@ -1,5 +1,5 @@
 
-function rho = AR_YW(Y,p)
+function [rho,wnsig] = AR_YW(Y,p)
 % rho = AR_YW(Y,p)
 %
 %%% INPUTS
@@ -7,17 +7,21 @@ function rho = AR_YW(Y,p)
 % p : order -- integer
 %
 %%% OUTPUTS
-% rho : AR parameters
+% rho   : AR parameters
+% wnsig : variance of noise 
 %
 % SA, Ox, 2020
 
-    T   = numel(Y); 
-    ac  = AC_fft(Y,T);    
-    %ac(round(2*sqrt(T)):end) = 0;
-    R   = toeplitz(ac(1:p));
-    r   = ac(2:p+1);
+    T          = numel(Y); 
+    [ac,~,av]  = AC_fft(Y,T);    
+    R          = toeplitz(ac(1:p));
+    r          = ac(2:p+1);
         
-    rho = pinv(R)*r';
+    rho        = pinv(R)*r';
+    
+    ac0        = av(1:p+1)'./T; % this is biased cov, for unbiased scale with (T-abs(1:p+1))
+    wnsig      = ac0(1)-rho'*ac0(2:end);
+
 end
 
 function [xAC,CI,ACOV]=AC_fft(Y,L,varargin)

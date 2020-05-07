@@ -32,6 +32,7 @@ if nargin==4; rand('seed',seedid);                              end;
 
 [T,nts]     = size(Y);
 
+ETP = [];
 if ~mod(T,2) % if the time series are even, exclude the end point from analysis
     ETP = Y(end,:); 
     Y   = Y(1:end-1,:);
