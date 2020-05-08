@@ -2,7 +2,6 @@
 
 warning('off','all')
 
-
 % ---------------- TEST ----------------------------
 %pwdmethod  = 'ACF'; %ACF AR-YW AR-W ARMAHR
 %Mord       = 30; 
@@ -14,9 +13,6 @@ warning('off','all')
 %TR        = 0.645;
 %COHORTDIR = '/well/nichols/users/scf915/ROCKLAND';
 %Path2ImgResults = [COHORTDIR '/R.PW/TEST' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(MPparamNum)  ]
-
-
-
 
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
@@ -45,11 +41,11 @@ disp('=====SET UP PATHS =============================')
 Path2ImgRaw = [COHORTDIR '/R_mpp'];
 Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
 
-if ~lFWHM
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii'];
-else
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
-end
+%if ~lFWHM
+    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii.gz'];
+%else
+%    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
+%end
   
 Path2MC     = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
@@ -72,7 +68,26 @@ MParamNum           = 24;
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
 disp('=====LOAD THE IMAGE ===========================')
-[Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean');
+
+% ----------------------------------------------
+% one day this bit should be moved into the CleanNIFTI_spm.m
+CLK 	 = fix(clock);
+
+tmpdir   = [tempdir '/octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
+mkdir(tmpdir)
+
+randtempfilename = [tmpdir '/prefilt_tmp_' SubID '_' num2str(randi(50)) num2str(CLK(end)+randi(10)) '.nii'];
+disp(['Unzip into: ' randtempfilename ])
+system(['gunzip -c ' Path2Img ' > ' randtempfilename]); %gunzip function in Octave deletes the source file in my version!
+
+[Y,InputImgStat] = CleanNIFTI_spm(randtempfilename,'demean');
+
+disp(['Remove the temp directory: ' tmpdir])
+system(['rm -rf ' tmpdir])
+%rmdir(tmpdir,'s')
+
+%-----------------------------------------------
+
 T = InputImgStat.CleanedDim(2);
 TR = InputImgStat.voxelsize(4);
 Vorig = InputImgStat.CleanedDim(1);
@@ -331,4 +346,4 @@ if SaveMatFileFlag
     save(MatFileName,'GLM','SPEC','PW')
 end
 
-
+disp('xxDONExx')
