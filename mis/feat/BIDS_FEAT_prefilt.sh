@@ -1,23 +1,35 @@
 #!/bin/bash
 set -e
 
+#module load fsl/6.0.3
+#module load Python/3.6.6-foss-2018b
+
+module load Python/3.6.6-foss-2018b
+module load fsl/6.0.3
+
 COHORT=$1
 SubID=$2
 SesID=$3
-TR=$4
+AQLAB=$4
 
-betflag=1
-flag_feat1=1
-flag_feat2=1
+#example:
+# BIDS_FEAT_prefilt.sh ROCKLAND A00028429 DS2 645
 
+#TR=$4
+
+betflag=0
+flag_feat1=0
+flag_feat2=0
+flag_fnirt1=0
+flag_icaaroma=1
 #module add fsl
 
-coblar=1
+coblar=0
 
-ImageDir="/well/nichols/users/scf915/${COHORT}/sub-${SubID}/ses-${SesID}"
+ImageDir="/well/nichols/users/scf915/${COHORT}/raw/sub-${SubID}/ses-${SesID}"
 
-#FUNCIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${TR}_bold
-FUNIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${TR}_bold
+#FUNCIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
+FUNIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
 FUNCIMG=${ImageDir}/func/${FUNIMGNAME}
 
 ANATIMGNAME=sub-${SubID}_ses-${SesID}_T1w
@@ -63,12 +75,34 @@ if [ $flag_feat1 == 1 ]; then
 	-R ${fMRIPREP}/report_unwarp.html \
 	-r ${fMRIPREP}/report_reg.html  \
 	-i ${fMRIPREP}/example_func.nii.gz  \
+	-n 10 \
 	-h ${ANATIMGNAME}_brain \
 	-w BBR -x 90 \
 	-s ${STANIMG} -y 12 -z 90 
 else
-	echo "Pass the first stage!"
+	echo "NO BBR"
 fi
+
+if [ $flag_fnirt1 == 1 ]; then
+#runFlirt highres standard $standardDof $standardSearch trilinear $htmlReport "" "$nonLinearResolution" $logFile $fnirtConfig
+	    ini=highres
+            refi=standard
+	    wr=10
+
+	    flirt 
+
+	    immv ${ini}2${refi} ${ini}2${refi}_linear
+
+            ${FSLDIR}/bin/fslmaths $ANATIMG ${ini}_head
+	    ${FSLDIR}/bin/fnirt --iout=${ini}2${refi}_head --in=${ini}_head --aff=${ini}2${refi}.mat \
+	--cout=${ini}2${refi}_warp --iout=${ini}2${refi} --jout=${ini}2${refi}_jac --config="T1_2_MNI152_2mm" \
+	--ref=${refi}_head --refmask=${refi}_mask --warpres=${wr},${wr},${wr}
+
+	    ${FSLDIR}/bin/applywarp -i ${ini} -r ${refi} -o ${ini}2${refi} -w ${ini}2${refi}_warp
+else
+	echo "Not going to do an independent nonlin registration."
+fi
+
 
 if [ $flag_feat2 == 1 ]; then
 
@@ -98,6 +132,28 @@ if [ $flag_feat2 == 1 ]; then
 	#/usr/local/fsl/bin/fslstats prefiltered_func_data_mcf -k mask -p 50
 	#${FSLDIR}/bin/fslmaths mask -dilF mask
 	#${FSLDIR}/bin/fslmaths prefiltered_func_data_mcf -mas mask prefiltered_func_data_thresh
+
+else
+	echo "NO MCFLIRT"
+
+fi
+
+
+# RUN ICA-AROMA
+if [ $flag_icaaroma == 1 ]; then
+
+	echo "*** ICA-AROMA"
+
+	#module load Python
+	rm -rf ${fMRIPREP}/ica-aroma
+	mkdir -p ${fMRIPREP}/ica-aroma
+
+	python3.6 /users/nichols/scf915/ICA-AROMA/ICA_AROMA.py \
+	-in ${fMRIPREP}/prefiltered_func_data_bet.nii.gz \
+	-affmat ${fMRIPREP}/reg/example_func2standard.mat \
+	-mc ${fMRIPREP}/prefiltered_func_data_mcf.par \
+	-out ${fMRIPREP}/ica-aroma \
+	-den both
 fi
 
 
