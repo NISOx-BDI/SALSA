@@ -3,6 +3,7 @@
 NCORES=2
 COHORT=ROCKLAND
 
+ACQLAB=CAP
 T=120 #
 TRs=2.5 # in second
 
@@ -10,7 +11,7 @@ TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
 
 METHODLIST=(ACF ACFadj AR-W ARMAHR)
 ARMODE=(1 2 5 10 20)
-ACMODE=(5 10 15 $(echo "sqrt($T)" | bc) $(echo "2*sqrt($T)" | bc))
+ACMODE=(5 $(echo "sqrt($T)" | bc) 15 $(echo "2*sqrt($T)" | bc))
 
 FWHMsize=0
 TempTreMethod="dct"
@@ -82,7 +83,7 @@ SubID=\$(cat ${COHORTDIR}/participants.tsv | awk {'print \$1'} | sed "\${SGE_TAS
 
 OCTSCRPT=\${HOME}/bin/FILM2/NullRealfMRI/Img
 cd \${OCTSCRPT}
-octave -q --eval "COHORTDIR=\"${COHORTDIR}\"; Path2ImgResults=\"${Path2ImgResults}\"; pwdmethod=\"${METH_ID}\"; lFWHM=${FWHMsize}; TR=${TRs}; Mord=${ARO}; MPparamNum=${MAO}; TempTreMethod=\"${TempTreMethod}\"; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc; quit"
+octave -q --eval "COHORTDIR=\"${COHORTDIR}\"; Path2ImgResults=\"${Path2ImgResults}\"; pwdmethod=\"${METH_ID}\"; lFWHM=${FWHMsize}; ACQLAB=\"${ACQLAB}\"; TR=${TRs}; Mord=${ARO}; MPparamNum=${MAO}; TempTreMethod=\"${TempTreMethod}\"; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc_cap; quit"
 
 # The stat file
 echo 1 > \$STATFILE

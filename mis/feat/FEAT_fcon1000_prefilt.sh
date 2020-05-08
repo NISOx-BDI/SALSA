@@ -9,31 +9,33 @@ module load fsl/6.0.3
 
 COHORT=$1
 SubID=$2
-SesID=$3
-AQLAB=$4
+SesID="DS2"
 
 #example:
 # BIDS_FEAT_prefilt.sh ROCKLAND A00028429 DS2 645
 
 #TR=$4
 
-betflag=0
-flag_feat1=0
-flag_feat2=0
+betflag=1
+flag_feat1=1
+flag_feat2=1
 flag_fnirt1=0
 flag_icaaroma=1
 #module add fsl
 
 coblar=0
 
-ImageDir="/well/nichols/users/scf915/${COHORT}/raw/sub-${SubID}/ses-${SesID}"
+ImageDir="/well/nichols/users/scf915/${COHORT}/raw/sub${SubID}/"
 
 #FUNCIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
-FUNIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
+FUNIMGNAME=rest
 FUNCIMG=${ImageDir}/func/${FUNIMGNAME}
 
-ANATIMGNAME=sub-${SubID}_ses-${SesID}_T1w
+
+ANATIMGNAME=mprage_T1
 ANATIMG=${ImageDir}/anat/${ANATIMGNAME}
+
+#cp ${ImageDir}/anat/ ${ImageDir}/anat/${ANATIMGNAME}_brain
 
 STANIMG=${FSLDIR}/data/standard/MNI152_T1_2mm_brain
 
@@ -59,6 +61,8 @@ pwd
 if [ $betflag == 1 ]; then
 	echo ""
 	echo "BET the image..."
+
+	${FSLDIR}/bin/robustfov -i ${ImageDir}/anat/mprage_anonymized.nii.gz -r ${ANATIMG}.nii.gz
 	${FSLDIR}/bin/bet ${ANATIMG}.nii.gz ${fMRIPREP}/${ANATIMGNAME}_brain.nii.gz -f 0.3 -n -m -R -S -B
 fi
 
