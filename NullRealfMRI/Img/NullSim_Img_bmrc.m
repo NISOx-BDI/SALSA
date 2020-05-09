@@ -14,6 +14,7 @@ warning('off','all')
 %COHORTDIR = '/well/nichols/users/scf915/ROCKLAND';
 %Path2ImgResults = [COHORTDIR '/R.PW/TEST' pwdmethod '_AR-' num2str(Mord) '_MA-' num2str(MPparamNum)  ]
 
+
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
 disp(['SubID: ' SubID])
@@ -24,9 +25,17 @@ disp(['AR order:' num2str(Mord)])
 disp(['MA order: ' num2str(MPparamNum)])
 disp(['lFWHM: ' num2str(lFWHM)])
 disp(['Detrending: ' TempTreMethod])
+disp(['COHORT name:' COHORT])
 disp(['COHORT directory:' COHORTDIR])
 disp(['Parth 2 Results: ' Path2ImgResults ])
 disp('=======================================')
+
+SaveImagesFlag      = 1; 
+SaveMatFileFlag     = 1; 
+DoDetrendingPrior   = 0; 
+MParamNum           = 24;
+gsrflag             = 1;
+icaclean            = 2;
 
 PATH2AUX='~/bin/FILM2';
 addpath([PATH2AUX '/utils/Trend'])
@@ -36,16 +45,27 @@ addpath([PATH2AUX '/mis'])
 addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'));
 %addpath('/well/nichols/users/scf915/externals/spm12')
 
+
+
 disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
-Path2ImgRaw = [COHORTDIR '/R_mpp'];
-Path2ImgDir = [Path2ImgRaw '/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
+Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
+if strcmpi(COHORT,'ROCKLAND')
+    Path2ImgDir = [Path2ImgRaw '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
+elseif any(strcmpi(COHORT,{'Beijing','Cambridge'}))
+    Path2ImgDir = [Path2ImgRaw '/rest_mpp'];
+end
 
-%if ~lFWHM
+if ~icaclean
+    icalab = 'off';
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii.gz'];
-%else
-%    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
-%end
+elseif icaclean==1
+    icalab = 'nonaggr';
+    Path2Img    = [Path2ImgDir '/ica-aroma/denoised_func_data_nonaggr.nii.gz'];
+elseif icaclean==2
+    icalab = 'aggr';
+    Path2Img    = [Path2ImgDir '/ica-aroma/denoised_func_data_aggr.nii.gz'];
+end
   
 Path2MC     = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
@@ -60,11 +80,6 @@ if ~exist(Path2ImgResults, 'dir')
 end
 
 disp(['Output stuff: ' Path2ImgResults])
-
-SaveImagesFlag      = 1; 
-SaveMatFileFlag     = 1; 
-DoDetrendingPrior   = 0; 
-MParamNum           = 24; 
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
 disp('=====LOAD THE IMAGE ===========================')
@@ -148,6 +163,15 @@ disp(['Number of motion parameter: ' num2str(MParamNum)])
 X = [X,MCp];
 disp(['design updated, ' num2str(size(X,2))])
 
+% Global Signal -----------------------------------------
+if gsrflag
+    GSRts = mean(Y,2); 
+    X = [X,GSRts];
+    disp(['global signal regression: ' num2str(size(GSRts,1)) ' x ' num2str(size(GSRts,2))])
+    disp(['design updated, ' num2str(size(X,2))]) 
+end
+
+
 % Temporal trends ----------------------------------------
 TempTrend = [];
 if ~exist('NumTmpTrend','var'); NumTmpTrend=[]; end;
@@ -191,6 +215,11 @@ elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ARMAHRflag      = 1; 
     MPparamNum      = 1;  % the MA order 
     ARParamARMA     = 50; % the higher fit in ARMA HR
+elseif strcmpi(pwdmethod,'ARMAReML') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ARMA_ReMLflag   = 1; 
+    Mdl          = arima(1,0,1);
+    Mdl.Constant = 0;
+    Mdl.Variance = 1;        
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -263,6 +292,15 @@ for vi = 1:V
         [arParam,maParam]    = ARMA_HR_ACF(residY(:,vi),YWARparam_tmp',T,Mord,MPparamNum);
         ACMat                = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
         [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
+        
+        
+    elseif ARMA_ReMLflag
+        if ~mod(vi,1000); disp(['ARMA-ReML ::: on voxel ' num2str(vi)]); end; 
+        a  = estimate(Mdl,residY(:,vi),'Display','off');
+        arParam=a.AR{1}; 
+        maParam=a.MA{1};
+        ACMat                = ARMACovMat([arParam,maParam],T,1,1);
+        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);        
     end
 
     if spdflag
@@ -280,6 +318,7 @@ for vi = 1:V
     tVALUE_PW(vi)  = Stat_PW_SE_T_tmp.tval;
 
     dpwRES(:,vi)       = dpwRES_tmp;
+    %Ystar(:,vi)        = Ystar_YW;    
     
     [~,CPSstat_PW(vi),CPZ_PW(vi)] = CPSUnivar(dpwRES_tmp,Xstar_YW);
 end
@@ -342,7 +381,8 @@ if SaveMatFileFlag
     PW.ARp    = Mord;
     PW.nonSPD = nonstationaryvox;
     
-    MatFileName = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '.mat'];
+    MatFileName = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_ICACLEAN' icalab '_GSR' num2str(gsrflag) '.mat'];
+
     save(MatFileName,'GLM','SPEC','PW')
 end
 
