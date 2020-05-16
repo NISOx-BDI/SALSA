@@ -36,10 +36,11 @@ function [cbhat,Yhat,RES,stat] = myOLS(Y,X,contrast)
     stat.zval  = sqrt(2)*erfinv(2*stat.ltp-1); % does what norminv do; norminv is not available on bmrc Octave
     stat.pval  = 1-stat.ltp;
         
-    rss        = sum(RES.^2);
+    
     % these two don't match what Matlab's fitglm.m outputs
-    stat.AIC   = 2*(p+1)+t*log(rss/t);
-    stat.BIC   = log(t)*(p+1)+t*log(sum(RES.^2)/t);
+%     rss        = sum(RES.^2);
+%     stat.AIC   = 2*(p+1)+t*log(rss/t);
+%     stat.BIC   = log(t)*(p+1)+t*log(sum(RES.^2)/t);
     
 end
 
