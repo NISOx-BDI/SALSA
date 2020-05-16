@@ -14,7 +14,8 @@ fnnf=mfilename; if ~nargin; help(fnnf); return; end; clear fnnf;
 %_________________________________________________________________________
 
 
-Steps=[]; verbose=1; DestDir=[]; md=[]; scl=[]; ImgStat=[];
+Steps=[]; verbose=1; DestDir=[]; md=[]; scl=[]; ImgStat=[]; fwhm = 0;
+Path2Mask = []; 
 datatype  = 'f';
 %voxelsize = [2 2 2 1];
 SaveFlag     = 0;
@@ -23,8 +24,20 @@ if sum(strcmpi(varargin,'verbose'))
    verbose      =   varargin{find(strcmpi(varargin,'verbose'))+1}; 
 end
 %
+if sum(strcmpi(varargin,'removables'))
+   Removables      =   varargin{find(strcmpi(varargin,'removables'))+1}; 
+end
+%
 if sum(strcmpi(varargin,'destdir'))
    DestDir      =   varargin{find(strcmpi(varargin,'destdir'))+1};
+end
+
+if sum(strcmpi(varargin,'mask'))
+   Path2Mask      =   varargin{find(strcmpi(varargin,'mask'))+1};
+end
+
+if sum(strcmpi(varargin,'fwhm'))
+   fwhm      =   varargin{find(strcmpi(varargin,'fwhm'))+1};
 end
 
 if sum(strcmpi(varargin,'ImgInfo'))
@@ -76,7 +89,13 @@ end
 % path(path, fsldirmpath);
 % clear fsldir fsldirmpath;
 
+CLK	 = fix(clock);
+tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
+mkdir(tmpdir)
+disp(['--created: ' tmpdir])
+
 if ischar(V0)
+        
     [ffpathstr,ffname,ffext]=fileparts(V0);
     if verbose; disp(['-Path to the image is: ' ffpathstr]); end;
     
@@ -91,14 +110,20 @@ if ischar(V0)
     elseif isempty(strfind(ffname,'.dtseries')) || ~isempty(strfind(ffname,'.nii'))
         if verbose; disp(['--File is NIFTI: ' ffname ffext]); end;
         
+        if strfind(V0,'.gz')
+            disp('- gunzip the image.')
+            randtempfilename=[tmpdir '/img_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(1000)) '.nii'];
+            system(['gunzip -c ' V0 ' > ' randtempfilename]);        
+        else
+            randtempfilename = V0;
+        end
         
-        
-        Vstruct   = spm_vol(V0);
-        V2        = spm_read_vols(Vstruct);
-        dims      = Vstruct(1).private.dat.dim;
-        TR        = Vstruct(1).private.timing.tspace;
-        voxelsize = [abs(diag(Vstruct(1).mat(1:3,1:3)))' TR];
-        Stat.spmV = Vstruct;
+        Vmask   = spm_vol(randtempfilename);
+        V2        = spm_read_vols(Vmask);
+        dims      = Vmask(1).private.dat.dim;
+        TR        = Vmask(1).private.timing.tspace;
+        voxelsize = [abs(diag(Vmask(1).mat(1:3,1:3)))' TR];
+        Stat.spmV = Vmask;
         %[V2,dims,voxelsize] = read_avw(V0);
         
         ND=ndims(V2);
@@ -115,6 +140,17 @@ if ischar(V0)
         if sum(ismember(dims,[X0,Y0,Z0,T0]))~=ND
             error('CleanNIFTI_fsl:: something is wrong with the dimensions!'); 
         end
+        
+        %figure; imagesc(squeeze(mean(V2(:,25,:,:),4)))
+        
+        % Guassian Kernel Smoothing 
+        if fwhm
+            disp(['-Smooth the image with fwhm: ' num2str(fwhm)])
+            disp(['-- voxel sizes: ' num2str(voxelsize(1)) 'x' num2str(voxelsize(2)) 'x' num2str(voxelsize(3))])
+            V2 = GaussianSmooth(V2,fwhm,round(voxelsize));
+        end
+        
+        %figure; imagesc(squeeze(mean(V2(:,25,:,:),4)))
         
         I0 = prod([X0,Y0,Z0]);
         Y  = reshape(V2,[I0,T0]); clear V2;
@@ -154,13 +190,31 @@ end
 
 %Y = double(Y);%to work with int 16bit as well.
 if ~SaveFlag
-    %------------------------------------------------------------------------
-    %Remove voxels of zeros/NaNs---------------------------------------------------
-    nan_idx    = find(isnan(sum(Y,2)));
-    zeros_idx  = find(sum(Y,2)==0);
+    
+    if ~isempty(Path2Mask)
+        disp(['--A mask is being used to extract ''good'' time series.'])
+        if strfind(Path2Mask,'.gz')
+            disp('- gunzip the mask.')
+            randtempfilename4mask=[tmpdir '/mask_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(1000)) '.nii'];
+            system(['gunzip -c ' Path2Mask ' > ' randtempfilename4mask]);
+        else
+            randtempfilename4mask = Path2Mask;
+        end
+        Vmask   = spm_vol(randtempfilename4mask);
+        mask    = spm_read_vols(Vmask);
+        maskdim = size(mask);
+        mask    = reshape(mask,[1,prod(maskdim)]);
+        Removables = find(mask==0);
+    elseif isempty(Path2Mask)
+        disp(['-Any time series which is either nan or summed zero is removed.'])
+        nan_idx    = find(isnan(sum(Y,2)));
+        zeros_idx  = find(sum(abs(Y),2) < (eps*10e5) ); %find(sum(Y,2)==0);
+        Removables = [nan_idx;zeros_idx];
+    end
+        
     idx        = 1:I0;
-    idx([nan_idx;zeros_idx]) = [];
-    Y([nan_idx;zeros_idx],:) = [];
+    idx(Removables) = [];
+    Y(Removables,:) = [];
     I1 = size(Y,1); %update number of voxels
 
     if verbose; disp(['-Extra-cranial areas removed: ' num2str(size(Y,1)) 'x' num2str(size(Y,2))]); end;
@@ -169,7 +223,7 @@ if ~SaveFlag
     Stat.GlobalMeanSignal = mean(Y);
     Stat.OrigDim     = [I0 T0];
     Stat.CleanedDim  = [I1 T0];
-    Stat.Removables  = [nan_idx;zeros_idx];
+    Stat.Removables  = Removables;
     Stat.idx         = idx;
     OrigMean         = mean(Y,2);
     Stat.OrigMean    = OrigMean;
@@ -178,6 +232,7 @@ if ~SaveFlag
     Stat.idx3D       = [X3d;Y3d;Z3d]';       
     Stat.voxelsize   = voxelsize;
     Stat.datatype    = datatype;
+    Stat.TR          = TR;
 end
 %------------------------------------------------------------------------
 % Intensity Normalisation------------------------------------------------------
@@ -212,36 +267,44 @@ end
 %Save the image-----------------------------
 if ~isempty(ImgStat) && isnumeric(V0) && SaveFlag
     %if ~any(strfind(path,'spm')); warning('**SPM has not been added to the path!**'); end;
-    DestDir = ImgStat.fname; 
+    %DestDir = ImgStat(1).fname; 
     [spathstr,sname,stext]=fileparts(DestDir);
+    
     
     if isempty(spathstr)
         Dir2Save = sname;
     else
         if exist(spathstr,'dir')~=7; mkdir(spathstr); end;
-        Dir2Save = [spathstr '/' sname];
+        Dir2Save = [spathstr '/' sname stext];
     end
     
     if verbose; disp(['Image saved: ' Dir2Save]); end; 
     
-    X0= ImgStat.dim(1); 
-    Y0= ImgStat.dim(2); 
-    Z0= ImgStat.dim(3);
+    X0= ImgStat(1).dim(1); 
+    Y0= ImgStat(1).dim(2); 
+    Z0= ImgStat(1).dim(3);
     
     I00 = prod([X0,Y0,Z0]);
     
-%     if T0~=1 %if image was 4D
-%         T00= ImgStat.ImgDim(4);
-%         if T00~=T0; error('There is something wrong the volumes.'); end; 
-%     end
+    if T0==1 
+        disp('Saved image will be 3D.');
+        ImgStat = ImgStat(1); 
+    end
     
     img_idx = 1:I00;
-    img_idx(ImgStat.Removables) = []; % this is index of signal
+    img_idx(Removables) = []; % this is index of signal
     
     Y_tmp            = zeros(I00,T0); %leave the T0 here, if it is one it is fine in case of 3D images
     Y_tmp(img_idx,:) = Y;
     Y_tmp            = reshape(Y_tmp,[X0 Y0 Z0 T0]); %leave the T0 here, if it is one it is fine in case of 3D images
-    spm_write_vol(ImgStat,Y_tmp);
+    
+    for it = 1:T0
+        %ImgStat(it).dim   = size(Y_tmp); 
+        ImgStat(it).fname = Dir2Save;
+        ImgStat(it).private.dat.fname = Dir2Save;
+        spm_write_vol(ImgStat(it),Y_tmp(:,:,:,it));
+    end
+    system(['gzip ' Dir2Save]);
     %save_avw(Y_tmp,Dir2Save,datatype,ImgStat.voxelsize);
     clear *_tmp clear V_Img;
 else
@@ -259,9 +322,52 @@ end
 %     fsl_bptf(DestDir,DestDir,[bp(1) bp(2),TR])
 %     Steps=[Steps 'BPTF'];
 % end
-Stat.Steps=Steps;
+Stat.Steps = Steps;
+
+
+status = system(['rm -r ' tmpdir]);
+if ~status
+    disp(['--created: ' tmpdir]) 
+else
+    disp('--Warning: the temp directory was not deleted.')
+end
+
+end
 
 % function fsl_bptf(Vin,Vout,bp,TR)
 % % bp should be in frq
 % f2tr=@(f,TR) 0.5*(1/f)/TR;
 % system(['/usr/local/fsl/bin/fslmaths ' Vin ' -bptf ' num2str(round(f2tr(bp(1),TR),2)) ' ' num2str(round(f2tr(bp(2),TR),2)) ' ' Vout ])
+
+
+function sV = GaussianSmooth(V,fwhm,D)
+   % from FMRISTAT, gauss_blur.m
+
+   numxs     = size(V,1);
+   numys     = size(V,2);
+   nZ        = size(V,3);
+   nT        = size(V,4);
+   numpix    = numxs*numys;
+   
+   if length(fwhm) == 1
+      fwhm=repmat(fwhm,1,3);
+   end
+   fwhm_x = fwhm(1)/abs(D(1));
+   ker_x  = exp(-(-ceil(fwhm_x):ceil(fwhm_x)).^2*4*log(2)/fwhm_x^2);
+   ker_x  = ker_x/sum(ker_x);
+   fwhm_y = fwhm(2)/abs(D(2));
+   ker_y  = exp(-(-ceil(fwhm_y):ceil(fwhm_y)).^2*4*log(2)/fwhm_y^2);
+   ker_y  = ker_y/sum(ker_y);
+   fwhm_z = fwhm(3)/abs(D(3));
+   ker_z  = exp(-(0:(nZ-1)).^2*4*log(2)/fwhm_z^2);
+   K      = toeplitz(ker_z);
+   K      = K./(ones(nZ)*K);
+   
+   sV=zeros(numxs,numys,nZ,nT);
+   for iT = 1:nT
+      for iZ = 1:nZ
+         temp(:,iZ) = reshape(conv2(ker_x,ker_y,V(:,:,iZ,iT),'same'),numpix,1);   
+      end
+      sV(:,:,:,iT)  = reshape(temp*K,[numxs numys nZ 1]);
+   end
+end
