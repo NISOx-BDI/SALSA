@@ -15,6 +15,15 @@ for vv = 1:V
     h(:,vv) = freqz(1,ARyEst(vv,:),nfft,'whole',Fs);
 end
 
+%%%% SANITY CHECK
+% [ARyEst,ARv] = aryule(Y(:,5),ARorder); % sanity check
+% g = freqz(1,ARyEst,895,'whole',1);
+% plot(real(g))
+% hold on; 
+% gg = 1./fft([ARyEst zeros(1,895-ARorder)],895);
+% plot(real(gg))
+%%%%
+
 Sxx     = bsxfun(@times,ARv,abs(h).^2);   % make it power & multiply by variance of AR 
 Pxx0    = Sxx./Fs; % this is theoritical periodgram of the AR/ARMA process
 %%%% two sided get the periodogram 
@@ -26,6 +35,10 @@ rawpxx  = SF * psdx;
 % these are only useful for plotting & sanity check
 %freq   = 0:Fs/nfft:Fs; 
 %freq   = freq(1:end-1); 
+
+figure; hold on; 
+plot(rawpxx)
+plot(Pxx0)
 
 Wspec   = rawpxx./Pxx0; % flatten the periodogram
 
