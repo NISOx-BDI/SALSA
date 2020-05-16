@@ -6,8 +6,11 @@ function EDX = GenerateED(lD,T,TR)
 
     BCWidth     = fix(lD/2/TR);
     oneSTIM     = [zeros(1, BCWidth), ones(1, BCWidth)];
+    
     numberSTIM  = fix(T/numel(oneSTIM));
     DD          = repmat(oneSTIM, [1, numberSTIM]);
+    
+    
     hrf         = spm_hrf(TR); 
     conv_dsgn   = conv(DD,hrf); 
     EDX         = conv_dsgn(1:T)';
