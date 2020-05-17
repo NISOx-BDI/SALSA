@@ -105,7 +105,10 @@ if size(Y,1)~=T; Y = Y'; end; %TxV
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN MATRIX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++++++++++++++++++++++++++')
 disp('++++++++++++ Construct a design matrix')
+disp('++++++++++++++++++++++++++++++++++++')
+
 %%% Generate a Design Matrix --------------------------------
 
 if strcmpi(EDtype,'boxcar')
@@ -115,7 +118,7 @@ if strcmpi(EDtype,'boxcar')
     Xc  = 1; % where is the experimental design?
 elseif strcmpi(EDtype,'er')
     BCl = 0;
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
     EDX = load(path2evs);
 end
 disp(['The paradigm is: ' EDtype])
@@ -168,7 +171,9 @@ glmcont([2,3])     = [1 -1];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PREWHITEN THE RESIDULAS & ESTIMATE BIAS AND CPS %%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+disp('++++++++++++++++++++++++++++++++++++')
+disp('++++++++++++PREWHITEN THE MODEL.')
+disp('++++++++++++++++++++++++++++++++++++')
 MPparamNum = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask);
@@ -185,7 +190,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SPECTRUM OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++++++++++++++++++++++++++')
 disp('++++++++++++Calculate the spectrum of the residuals.')
+disp('++++++++++++++++++++++++++++++++++++')
+
 [dpwRESXp,dpwRESYp]      = DrawMeSpectrum(WRES,TR,0);
 dpwRESYp                 = mean(dpwRESYp,2); % average across voxels
 %clear dpwRES
@@ -195,7 +203,9 @@ resNaiveYp               = mean(resNaiveYp,2); % average across voxels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAVE THE RESULTS AS AN IMAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++++++++++++++++++++++++++')
 disp('++++++++++++Save the results.')
+disp('++++++++++++++++++++++++++++++++++++')
 
 if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
