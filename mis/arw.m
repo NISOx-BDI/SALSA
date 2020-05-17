@@ -56,13 +56,13 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,
     
     pinvX               = pinv(X); 
     ResidFormingMat     = eye(ntp)-X*pinvX; % residual forming matrix 
-    RES              = ResidFormingMat*Y;
+    RES                 = ResidFormingMat*Y;
 
     % find the acf of the residuals
     [~,~,dRESacov]      = AC_fft(RES,ntp); % Autocovariance; VxT
     dRESacov            = dRESacov';
     dRESacov            = dRESacov(1:ARO+1,:); %cut-off here so smoothing gets much faster
-    size(dRESacov)
+    
     % smooth ACF
     FWHMl               = 5; 
     dRESacov            = ApplyFSLSmoothing(dRESacov',FWHMl,ImgStat,path2mask)';

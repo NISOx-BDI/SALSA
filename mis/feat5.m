@@ -110,10 +110,10 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat)
     acv         = acv';
     
     % adjust for bias
-    if nargin==3 || isempty(ResidFormingMat)
+    if nargin==3  && ~isempty(ResidFormingMat)
         BiasAdj = ACFBiasAdjMat(ResidFormingMat,ntp,tukey_m);
         disp('feat:: adjusting autocovariances.')
-    elseif nargin<3
+    elseif nargin<3 || isempty(ResidFormingMat)
         BiasAdj = eye(tukey_m+1); 
     end
     
