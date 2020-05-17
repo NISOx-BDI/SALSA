@@ -28,6 +28,7 @@ disp(['Detrending: ' TempTreMethod])
 disp(['COHORT name:' COHORT])
 disp(['COHORT directory:' COHORTDIR])
 disp(['Parth 2 Results: ' Path2ImgResults ])
+disp(['FSLDIR: ' getenv('FSLDIR')])
 disp('=======================================')
 
 EDtype    = 'ER'; % boxcar
