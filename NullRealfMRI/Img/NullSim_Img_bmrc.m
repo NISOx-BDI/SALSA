@@ -34,8 +34,8 @@ SaveImagesFlag      = 1;
 SaveMatFileFlag     = 1; 
 DoDetrendingPrior   = 0; 
 MParamNum           = 24;
-gsrflag             = 1;
-icaclean            = 2;
+%gsrflag             = 1;
+%icaclean            = 2;
 
 PATH2AUX='~/bin/FILM2';
 addpath([PATH2AUX '/utils/Trend'])
@@ -57,15 +57,16 @@ elseif any(strcmpi(COHORT,{'Beijing','Cambridge'}))
 end
 
 if ~icaclean
-    icalab = 'off';
+    %icalab = 'off';
     Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii.gz'];
 elseif icaclean==1
-    icalab = 'nonaggr';
+    %icalab = 'nonaggr';
     Path2Img    = [Path2ImgDir '/ica-aroma/denoised_func_data_nonaggr.nii.gz'];
 elseif icaclean==2
-    icalab = 'aggr';
+    %icalab = 'aggr';
     Path2Img    = [Path2ImgDir '/ica-aroma/denoised_func_data_aggr.nii.gz'];
 end
+icalab=num2str(icaclean);
   
 Path2MC     = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
@@ -353,7 +354,7 @@ if SaveImagesFlag
     for vname = VariableList
 
         tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '.nii'];
+        OutputImgStat.fname      = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '_GSR' num2str(gsrflag) '_AROMA' icalab '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
         system(['gzip ' OutputImgStat.fname]);
@@ -381,7 +382,7 @@ if SaveMatFileFlag
     PW.ARp    = Mord;
     PW.nonSPD = nonstationaryvox;
     
-    MatFileName = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_ICACLEAN' icalab '_GSR' num2str(gsrflag) '.mat'];
+    MatFileName = [Path2ImgResults '/sub-' SubID '_ses-' SesID '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_GSR' num2str(gsrflag) '_AROMA' icalab '.mat'];
 
     save(MatFileName,'GLM','SPEC','PW')
 end
