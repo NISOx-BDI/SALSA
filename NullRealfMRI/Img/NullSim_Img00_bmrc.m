@@ -31,7 +31,7 @@ disp(['Parth 2 Results: ' Path2ImgResults ])
 disp(['FSLDIR: ' getenv('FSLDIR')])
 disp('=======================================')
 
-EDtype    = 'ER'; % boxcar
+EDtype    = 'ERF'; % boxcar
 
 SaveImagesFlag      = 1; 
 SaveMatFileFlag     = 1; 
@@ -120,6 +120,12 @@ elseif strcmpi(EDtype,'er')
     BCl = 0;
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
     EDX = load(path2evs);
+    disp(['Paradigm comes from: ' path2evs])
+elseif strcmpi(EDtype,'erf')
+    BCl = 0;
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
+    EDX = load(path2evs);    
+    disp(['Paradigm comes from: ' path2evs])
 end
 disp(['The paradigm is: ' EDtype])
 
