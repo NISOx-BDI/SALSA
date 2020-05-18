@@ -20,4 +20,9 @@ else
 end
 disp(['Number of motion parameter: ' num2str(MParamNum)])
 
+
+    % z-score the motion parameters
+    MCp = MCp./std(MCp); 
+    MCp = MCp-mean(MCp); 
+
 end
