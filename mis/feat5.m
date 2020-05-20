@@ -34,7 +34,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,ImgStat,path2mask,badjflag)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,ImgStat,path2mask,badjflag,feat5repeat)
 % Y      : TxV
 % X      : TxEV
 % tcon   : 1xEV
@@ -47,8 +47,19 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
 %
 % SA, Ox, 2020
 
-    if ~exist('badjflag','var'); badjflag = 0; end;
+    acfFWHMl   = 5; 
 
+    disp('::feat5::')
+    if ~exist('badjflag','var');   badjflag = 0; end;
+    
+    if ~exist('feat5repeat','var')
+        feat5repeat = 0;
+    else
+        if feat5repeat
+            disp('feat5:: It is two iteration feat5.')
+        end
+    end
+    
     ntp                   = size(Y,1); 
     nvox                  = size(Y,2); 
     [cbhat,~,~,stat] = myOLS(Y,X,tcon); % not really needed unless for comparison
@@ -68,11 +79,11 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     % calc acf & tukey taper it
     if isempty(tukey_m); tukey_m = round(sqrt(ntp)); end
     
+    disp(['feat5:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
     acf_tukey   = acf_prep(RES,tukey_m,ResidFormingMat);
 
     % smooth ACF
-    FWHMl       = 5; 
-    acf_tukey   = ApplyFSLSmoothing(acf_tukey',FWHMl,ImgStat,path2mask)';
+    acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
     % make the pwfilter
     W_fft       = establish_pwfilter(acf_tukey,ntp);
 
@@ -89,16 +100,24 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     wse    = zeros(nvox,1); 
     wtv    = zeros(nvox,1);
     wzv    = zeros(nvox,1);
+    
+    disp('feat5:: Refit the prewhitened model.')
     for iv = 1:nvox
-        if ~mod(iv,5000); disp(['on voxel: ' num2str(iv)]); end; 
+        if ~mod(iv,5000); disp(['feat5:: on voxel: ' num2str(iv)]); end; 
         WX                        = prewhiten_model(X_fft,W_fft(:,iv),ntp);
         [Wcbhat(iv),WYhat(:,iv),WRES(:,iv),wstat] = myOLS(WY(:,iv),WX,tcon);
 
         wse(iv)  = wstat.se;
         wtv(iv)  = wstat.tval;
         wzv(iv)  = wstat.zval;    
-
     end
+    
+    if feat5repeat
+        disp('feat5:: We iterate again...')
+       [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,-1,ImgStat,path2mask,badjflag); 
+    end
+    
+    disp('feat5:: done.')
 
 end
 
@@ -109,10 +128,29 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat)
     [~,~,acv]   = AC_fft(RES,ntp);
     acv         = acv';
     
+    if tukey_m == -1
+        acftmp     = acv./acv(1,:); 
+        
+        acl = sum(acftmp.^2);
+        hidx = acl>prctile(acl,75);
+        lidx = acl<prctile(acl,25);
+        midx = prctile(acl,25)<=acl & acl<=prctile(acl,75);
+        
+        
+        where2stop = FindBreakPoint(acftmp,ntp);
+        
+        where2stop(midx) = where2stop(midx).*2;
+        where2stop(hidx) = where2stop(hidx).*3;
+        
+        tukey_m    = prctile(where2stop,99.99); % the max, but avoid outlier
+        disp(['feat5:: mean breakpint: ' num2str(mean(where2stop)) ', max:' num2str(max(where2stop)) ', 99th: ' num2str(tukey_m)])
+    end
+    
     % adjust for bias
     if nargin==3  && ~isempty(ResidFormingMat)
+        disp('feat5:: adjusting autocovariances: start.')
         BiasAdj = ACFBiasAdjMat(ResidFormingMat,ntp,tukey_m);
-        disp('feat:: adjusting autocovariances.')
+        disp('feat5:: adjusting autocovariances: done.')
     elseif nargin<3 || isempty(ResidFormingMat)
         BiasAdj = eye(tukey_m+1); 
     end
@@ -121,13 +159,19 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat)
     acv         = BiasAdj*acv(1:tukey_m+1,:); %apply adjustment
     acf         = acv./acv(1,:); % get ACF
     
-    
-    % Tukey taper
-    acf         = acf(1:tukey_m,:);
-    lag         = 0:tukey_m-1;
-    window      = .5 * (1 + cos(pi .* lag ./ tukey_m));
-    acf_tukey   = acf .* repmat(window',1,nvox);
-    
+    if tukey_m == -1 % this is trouble.
+        for i = 1:size(acf,2)
+            acfmask                  = zeros(1:ntp); 
+            acfmask(1:where2stop(i)) = 1;
+            acf(:,i)                 = acf(:,i).*acfmask;
+        end
+    else
+        % Tukey taper
+        acf         = acf(1:tukey_m,:);
+        lag         = 0:tukey_m-1;
+        window      = .5 * (1 + cos(pi .* lag ./ tukey_m));
+        acf_tukey   = acf .* repmat(window',1,nvox);
+    end
 end
 
 function W_fft = establish_pwfilter(acf,ntp)
@@ -195,4 +239,19 @@ function invM_biasred = ACFBiasAdjMat(ResidFormingMat,ntp,ARO)
     
 end
 
+function where2stop = FindBreakPoint(acf,T)
+% this finds the breaking points for shrinking the AC. 
+% Nothing serious, just might help with speed...
+% SA, Ox, 2018-2020
+    if ~sum(ismember(size(acf),T)); error('There is something wrong!'); end
+    if size(acf,2) ~= T; acf = acf'; end
+    
+    bnd        = (sqrt(2)*erfinv(0.95))./sqrt(T); %CI of ACF
+    isit       = abs(acf)>bnd;
+
+    where2stop = zeros(1,size(acf,1));
+    for i = 1:size(acf,1)
+        where2stop(i) = find(~isit(i,:),1)-1;
+    end
+end
 
