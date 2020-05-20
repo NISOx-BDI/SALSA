@@ -16,7 +16,7 @@ function [sY,smStat] = ApplyFSLSmoothing(Y,FWHMl,ImgStat,path2mask)
     randtempfilenamesmooth=[tmpdir '/smooth_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(10)) '.nii'];
 
     % build back a nifti file
-    CleanNIFTI_spm(Y,'ImgInfo',ImgStat.spmV,'destdir',randtempfilename2smooth,'Removables',ImgStat.Removables);
+    CleanNIFTI_spm(Y,'ImgInfo',ImgStat.spmV,'destdir',randtempfilename2smooth,'Removables',ImgStat.Removables,'verbose',0);
     
     fslsmoothcmd = ['sh ' spathstr '/fslsmooth.sh ' randtempfilename2smooth ' ' path2mask ' ' num2str(FWHMl) ' ' randtempfilenamesmooth];
     
@@ -26,7 +26,7 @@ function [sY,smStat] = ApplyFSLSmoothing(Y,FWHMl,ImgStat,path2mask)
     
     if ~status
         system(['gunzip ' randtempfilenamesmooth]);
-        [sY,smStat] = CleanNIFTI_spm(randtempfilenamesmooth,'mask',path2mask);
+        [sY,smStat] = CleanNIFTI_spm(randtempfilenamesmooth,'mask',path2mask,'verbose',0);
         system(['rm -r ' tmpdir]);
     elseif status
         error('ApplyFSLSmoothing:: fsl_call failed.')

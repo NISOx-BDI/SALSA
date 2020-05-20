@@ -92,7 +92,7 @@ end
 CLK	 = fix(clock);
 tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
 mkdir(tmpdir)
-disp(['--created: ' tmpdir])
+if verbose; disp(['--created: ' tmpdir]); end;
 
 if ischar(V0)
         
@@ -111,7 +111,7 @@ if ischar(V0)
         if verbose; disp(['--File is NIFTI: ' ffname ffext]); end;
         
         if strfind(V0,'.gz')
-            disp('- gunzip the image.')
+            if verbose; disp('- gunzip the image.'); end; 
             randtempfilename=[tmpdir '/img_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(1000)) '.nii'];
             system(['gunzip -c ' V0 ' > ' randtempfilename]);        
         else
@@ -192,7 +192,7 @@ end
 if ~SaveFlag
     
     if ~isempty(Path2Mask)
-        disp(['--A mask is being used to extract ''good'' time series.'])
+        if verbose; disp(['--A mask is being used to extract ''good'' time series.']); end; 
         if strfind(Path2Mask,'.gz')
             disp('- gunzip the mask.')
             randtempfilename4mask=[tmpdir '/mask_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(1000)) '.nii'];
@@ -206,7 +206,7 @@ if ~SaveFlag
         mask    = reshape(mask,[1,prod(maskdim)]);
         Removables = find(mask==0);
     elseif isempty(Path2Mask)
-        disp(['-Any time series which is either nan or summed zero is removed.'])
+        if verbose; disp(['-Any time series which is either nan or summed zero is removed.']); end
         nan_idx    = find(isnan(sum(Y,2)));
         zeros_idx  = find(sum(abs(Y),2) < (eps*10e5) ); %find(sum(Y,2)==0);
         Removables = [nan_idx;zeros_idx];
@@ -327,7 +327,7 @@ Stat.Steps = Steps;
 
 status = system(['rm -r ' tmpdir]);
 if ~status
-    disp(['--created: ' tmpdir]) 
+    if verbose; disp(['--created: ' tmpdir]); end; 
 else
     disp('--Warning: the temp directory was not deleted.')
 end

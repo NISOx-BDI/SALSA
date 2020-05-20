@@ -48,6 +48,9 @@ function [sY,smStat] = ApplyFSLSusan(Y,FWHMl,ImgStat,path2mask)
 end
 
 
+
+
+
 % CLK	 = fix(clock);
 % tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
 % mkdir(tmpdir)
