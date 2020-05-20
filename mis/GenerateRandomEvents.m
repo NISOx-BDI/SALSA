@@ -3,23 +3,33 @@ clear
 
 addpath('/Users/sorooshafyouni/Home/matlab/spm12')
 
-CohortID='ROCKLAND';
+CohortID='Beijing';
 
 Path2Mats=['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_' CohortID '/']; 
 FigDir = '/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/Img/FPR/RFigs';
 SubIDPath = [Path2Mats '/' CohortID '_subid.mat'];
 load(SubIDPath)
-SubList=participants(1:51); 
 
-nsub               = 50;
-T                  = 900;
-TR                 = 0.645;
+
+nsub               = 100;
+
+% NKI 1400
+% T                  = 404;
+% TR                 = 1.4;
+
+% NKI 900
+% T                  = 900;
+% TR                 = 0.645;
+
+% Beijing 225
+T                  = 225;
+TR               = 2;
 
 DinSec            = round(T*TR);
 DinTR             = T;
 hrf               = spm_hrf(TR);
 
-numEvents         = 18;
+numEvents         = 13;
 minRest_inSec     = 10;
 maxRest_inSec     = 13;
 minActivity_inSec = 3;
@@ -37,10 +47,13 @@ allRandomDurations2 = zeros(nsub,numEvents);
 allRandomOnsets1 = zeros(nsub,numEvents);
 allRandomOnsets2 = zeros(nsub,numEvents);
 
-path2saveEVs='/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs';
+path2saveEVs=['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
+
+system(['mkdir -p ' path2saveEVs])
 
 allsts = zeros(nsub,1);
 
+SubList=participants(1:nsub); 
 for sub_cnt = 1:nsub
     
     randomDurations1 = zeros(numEvents,1);
@@ -120,10 +133,10 @@ for sub_cnt = 1:nsub
     allRandomDurations1(sub_cnt,:) = randomDurations1;
     allRandomDurations2(sub_cnt,:) = randomDurations2;
     
-%     filename=[path2saveEVs '/' CohortID '_sub_' SubList{sub_cnt} '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-%     fileID = fopen(filename,'w');
-%     fprintf(fileID,'%f %f\n',[EDX1(:,sub_cnt),EDX2(:,sub_cnt)]');
-%     fclose(fileID);
+    filename=[path2saveEVs '/' CohortID '_sub_' SubList{sub_cnt} '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
+    fileID = fopen(filename,'w');
+    fprintf(fileID,'%f %f\n',[EDX1(:,sub_cnt),EDX2(:,sub_cnt)]');
+    fclose(fileID);
     
 end
 
@@ -151,4 +164,4 @@ ylabel('Power')
 xlabel('Frequency')
 
 %set(psfh,'color','w')
-%export_fig(psfh,['example_design.pdf'])
+export_fig(psfh,[CohortID '_T' num2str(T) '_TR' num2str(TR) '_example_design.pdf'])
