@@ -29,9 +29,10 @@ disp(['COHORT name:' COHORT])
 disp(['COHORT directory:' COHORTDIR])
 disp(['Parth 2 Results: ' Path2ImgResults ])
 disp(['FSLDIR: ' getenv('FSLDIR')])
+disp(['EDtype: ' EDtype])
 disp('=======================================')
 
-EDtype    = 'ERF'; % boxcar
+#EDtype    = 'ERF'; % boxcar
 
 SaveImagesFlag      = 1; 
 SaveMatFileFlag     = 1; 
