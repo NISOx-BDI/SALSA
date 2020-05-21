@@ -216,6 +216,18 @@ dpwRESYp                 = mean(dpwRESYp,2); % average across voxels
 [resNaiveSXp,resNaiveYp] = DrawMeSpectrum(RES,TR,0);
 resNaiveYp               = mean(resNaiveYp,2); % average across voxels
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ACL OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+disp('++++++++++++Calculate the ACL')
+acl  = ACLImage(RES');
+wacl = ACLImage(WRES');
+
+disp(['mean acl of res: ' num2str(mean(acl)) ])
+disp(['mean acl of w res: ' num2str(mean(wacl)) ])
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAVE THE RESULTS AS AN IMAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -226,7 +238,7 @@ disp('++++++++++++++++++++++++++++++++++++')
 if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     VariableList = {'cbhat','se','tv',...
-        'Wcbhat','wse','wtv'};
+        'Wcbhat','wse','wtv','acl','wacl'};
     OutputImgStat            = InputImgStat.spmV(1);
     OutputImgStat.Removables = InputImgStat.Removables;
 
