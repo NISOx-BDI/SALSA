@@ -114,7 +114,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     
     if feat5repeat
         disp('feat5:: We iterate again...')
-       [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,-2,ImgStat,path2mask,badjflag); 
+        % We send the prewhitened Y, with the original X in again
+       [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,X,tcon,-2,ImgStat,path2mask,badjflag); 
     end
     
     disp('feat5:: done.')
