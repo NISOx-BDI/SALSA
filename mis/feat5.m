@@ -114,7 +114,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     
     if feat5repeat
         disp('feat5:: We iterate again...')
-       [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,-1,ImgStat,path2mask,badjflag); 
+       [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,-2,ImgStat,path2mask,badjflag); 
     end
     
     disp('feat5:: done.')
@@ -128,21 +128,24 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat)
     [~,~,acv]   = AC_fft(RES,ntp);
     acv         = acv';
     
-    if tukey_m == -1
-        acftmp     = acv./acv(1,:); 
-        
-        acl = sum(acftmp.^2);
-        hidx = acl>prctile(acl,75);
-        lidx = acl<prctile(acl,25);
-        midx = prctile(acl,25)<=acl & acl<=prctile(acl,75);
-        
-        
+    if tukey_m < 0
+        acftmp     = acv./acv(1,:);         
         where2stop = FindBreakPoint(acftmp,ntp);
         
-        where2stop(midx) = where2stop(midx).*2;
-        where2stop(hidx) = where2stop(hidx).*3;
-        
-        tukey_m    = prctile(where2stop,99.99); % the max, but avoid outlier
+        if tukey_m == -1
+            
+            lp  = 25; 
+            hp  = 75; 
+            acl = sum(acftmp.^2);
+            hidx = acl>prctile(acl,hp);
+            lidx = acl<prctile(acl,lp);
+            midx = prctile(acl,lp)<=acl & acl<=prctile(acl,hp);
+            
+            where2stop(midx) = where2stop(midx).*2;
+            where2stop(hidx) = where2stop(hidx).*3;
+        end
+            
+        tukey_m    = fix(prctile(where2stop,99.99)); % the max, but avoid outlier
         disp(['feat5:: mean breakpint: ' num2str(mean(where2stop)) ', max:' num2str(max(where2stop)) ', 99th: ' num2str(tukey_m)])
     end
     
