@@ -177,7 +177,14 @@ X           = X - mean(X); % demean everything
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 X                  = [ones(T,1),X];
 glmcont            = zeros(1,size(X,2));
-glmcont([2,3])     = [1 -1];
+
+if strcmpi(EDtype,'boxcar')
+    glmcont(2)          = 1; 
+    disp('+ single contrast for boxcar is set.')
+elseif strcmpi(EDtype,'er') || strcmpi(EDtype,'erf')
+    glmcont([2,3])     = [1 -1];
+    disp('+ double tasks contrasted against each other.')
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PREWHITEN THE RESIDULAS & ESTIMATE BIAS AND CPS %%%%%%%%%%%%%%%%%%%%%%%
