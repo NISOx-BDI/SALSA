@@ -114,9 +114,8 @@ disp('++++++++++++++++++++++++++++++++++++')
 
 if strcmpi(EDtype,'boxcar')
     BCl = 20;
-    EDX = GenerateED(BCl,T,TR); 
+    EDX = GenerateED(BCl,T,TR,fix(T/15)); 
     EDX = EDX - mean(EDX); 
-    Xc  = 1; % where is the experimental design?
 elseif strcmpi(EDtype,'er')
     BCl = 0;
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
