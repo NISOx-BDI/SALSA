@@ -148,7 +148,7 @@ if gsrflag
 end
 
 % Temporal trends ----------------------------------------
-TempTrend = []; hp_ff = []; 
+TempTrend = []; K = []; 
 if ~exist('NumTmpTrend','var'); NumTmpTrend=[]; end;
 if any(strcmpi(TempTreMethod,{'dct','spline','poly'}))
     [TempTrend,NumTmpTrend]   = GenerateTemporalTrends(T,TR,TempTreMethod,NumTmpTrend); % DC + Poly trends + Spline trends 
@@ -167,7 +167,8 @@ elseif strcmpi(TempTreMethod,{'hpfk'})
     NumTmpTrend = hpf_cutoffcalc(X,TR,[Path2ImgResults '/' EDtype '_' num2str(BCl) 'design.mat']);
     hp_ff = hp_fsl(T,NumTmpTrend,TR);    
     X     = hp_ff*X;    % high pass filter the design
-    Y     = hp_ff*Y;  % high pass filter the data          
+    Y     = hp_ff*Y;  % high pass filter the data      
+    K     = hp_ff;
 end
 disp(['Detrending: ' TempTreMethod ',param: ' num2str(NumTmpTrend)])
 %
@@ -199,13 +200,13 @@ disp('++++++++++++PREWHITEN THE MODEL.')
 disp('++++++++++++++++++++++++++++++++++++')
 MPparamNum = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask,hp_ff);
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask,K);
 elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
     FeatRepeat = 0;
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,FeatRepeat,hp_ff);   
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,FeatRepeat,K);   
 elseif strcmpi(pwdmethod,'ACFadjx2') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%    
     FeatRepeat = 1; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,FeatRepeat,hp_ff);    
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,FeatRepeat,K);    
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,0,[]);
 elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
