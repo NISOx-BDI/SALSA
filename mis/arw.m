@@ -1,50 +1,53 @@
-% ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
-% tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
-% dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
-% path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
-% parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
-% %feat5/featlib.cc 
-% 
-% [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
-% Y = Y';
-% Y = Y - mean(Y);
-% 
-% disp('MC params.')
-% MCp      = load(parmat); 
-% MCp      = GenMotionParam(MCp,24); 
-% X        = [ones(T,1) load(dmat_fname) MCp];
-% 
-% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
-% 
-% % disp('hpf')
-% TR  = 0.645;
-% ntp = size(Y,1);
-% [TempTrend,NumTmpTrend]   = GenerateTemporalTrends(T,TR,'spline',3); % DC + Poly trends + Spline trends 
-% X       = [X TempTrend(:,2:end)];
-% 
-% 
-% 
-% tcon     = zeros(1,size(X,2));
-% tcon(2)  = 1;
-% 
-% 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw5(Y,X,tcon,10,ImgStat,path2mask);
-% 
-% [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
-% [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
-% 
-% figure; hold on; grid on; 
-% plot(PSDx,mean(PSDy,2))
-% plot(WPSDx,mean(WPSDy,2))
+ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
+tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
+dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
+path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
+parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+%feat5/featlib.cc 
+
+addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
+addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+
+[Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
+Y = Y';
+Y = Y - mean(Y);
+T=900;
+
+disp('MC params.')
+MCp      = load(parmat); 
+MCp      = GenMotionParam(MCp,24); 
+X        = [load(dmat_fname) MCp];
+
+disp('hpf')
+K = hp_fsl(size(Y,1),100,0.645);    
+X     = K*X;    % high pass filter the design
+Y     = K*Y;  % high pass filter the data
+
+X = [ones(T,1) X];
+tcon     = zeros(1,size(X,2));
+tcon(2)  = 1;
+
+[cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw5(Y,X,tcon,20,ImgStat,path2mask,[]);
+
+[PSDx,PSDy]   = DrawMeSpectrum(RES,1);
+[WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
+
+figure; hold on; grid on; 
+plot(PSDx,mean(PSDy,2))
+plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,ARO,ImgStat,path2mask)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw5(Y,X,tcon,ARO,ImgStat,path2mask,K)
 % Y    : TxV
 % X    : TxEV. X should have the detreding basis + motion parameters
 % tcon : 1xEV
 %
 %
 % SA, Ox, 2020
+
+    warning('off','all')
+
+    disp('::arw::')
 
     ntp                   = size(Y,1); 
     nvox                  = size(Y,2); 
@@ -58,18 +61,26 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,
     ResidFormingMat     = eye(ntp)-X*pinvX; % residual forming matrix 
     RES                 = ResidFormingMat*Y;
 
+    if ~exist('K','var')  || isempty(K)
+        K = eye(ntp);   
+    end;     
+    
     % find the acf of the residuals
     [~,~,dRESacov]      = AC_fft(RES,ntp); % Autocovariance; VxT
     dRESacov            = dRESacov';
     dRESacov            = dRESacov(1:ARO+1,:); %cut-off here so smoothing gets much faster
     
     % smooth ACF
-    FWHMl               = 5; 
-    dRESacov            = ApplyFSLSmoothing(dRESacov',FWHMl,ImgStat,path2mask)';
-    % bias adjusting matrix 
-    BiasAdj             = ACFBiasAdjMat(ResidFormingMat,ntp,ARO); 
+    acfFWHMl               = 5; 
+    dRESacov            = ApplyFSLSmoothing(dRESacov',acfFWHMl,ImgStat,path2mask)';
+    disp(['arw:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(ARO) ' lag.'])
+    
+    % bias adjusting matrix + filter K 
+    BiasAdj             = ACFBiasAdjMat(ResidFormingMat*K,ntp,ARO); 
 
+    
     % refit the model to pre-whitened data
+    disp('arw:: Refit the prewhitened model.')
     Wcbhat  = zeros(1,nvox);
     WYhat   = zeros(ntp,nvox); 
     WRES    = zeros(ntp,nvox);
@@ -114,13 +125,20 @@ end
 
 function invM_biasred = ACFBiasAdjMat(ResidFormingMat,ntp,ARO)
 % Bias adjustment for ACF of residuals. 
-
+% 
+% This is a bit tricky here. Note that ResidFormingMat is symmetric. 
+% So, ResidFormingMat*Di*ResidFormingMat'*Dj == ResidFormingMat*Di*ResidFormingMat'*Dj
+% And therefore, we can have ResidFormingMat = ResidFormingMat*K; if we
+% wanted to inject the K filter into the R. 
+% 
+% Also, note that this is different from Appendix A, Worsely 2002. In terms
+% of implementation. 
     M_biasred   = zeros(ARO+1);
     for i=1:(ARO+1)
         Di                  = (diag(ones(1,ntp-i+1),i-1)+diag(ones(1,ntp-i+1),-i+1))/(1+(i==1));
         for j=1:(ARO+1)
            Dj               = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
-           M_biasred(i,j)   = trace(ResidFormingMat*Di*ResidFormingMat*Dj)/(1+(i>1));
+           M_biasred(i,j)   = trace(ResidFormingMat*Di*ResidFormingMat'*Dj)/(1+(i>1));
         end
     end
     invM_biasred = inv(M_biasred);
