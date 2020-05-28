@@ -157,7 +157,7 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat,K)
     % adjust for bias
     disp('feat5:: adjusting autocovariances: start.')
     if nargin==4  && ~isempty(ResidFormingMat) && ~isempty(K)
-        if ismatrix(K); error('feat5:: adjusting autocovariances: filter should be a matrix'); end; 
+        if ~ismatrix(K); error('feat5:: adjusting autocovariances: filter should be a matrix'); end; 
         disp('feat5:: adjusting autocovariances: the filter is injected into the design.')
         BiasAdj = ACFBiasAdjMat(ResidFormingMat*K,ntp,tukey_m);
     elseif nargin>=3  && ~isempty(ResidFormingMat) && isempty(K)
