@@ -5,26 +5,29 @@
 % parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
 % %feat5/featlib.cc 
 % 
+% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
+% addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+% 
 % [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
 % Y = Y';
 % Y = Y - mean(Y);
+% T=900;
 % 
 % disp('MC params.')
 % MCp      = load(parmat); 
 % MCp      = GenMotionParam(MCp,24); 
-% X        = [ones(T,1) load(dmat_fname) MCp];
+% X        = [load(dmat_fname) MCp];
 % 
+% disp('hpf')
+% K = hp_fsl(size(Y,1),100,0.645);    
+% X     = K*X;    % high pass filter the design
+% Y     = K*Y;  % high pass filter the data
+% 
+% X = [ones(T,1) X];
 % tcon     = zeros(1,size(X,2));
 % tcon(2)  = 1;
 % 
-% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
-% 
-% disp('hpf')
-% hp_ff = hp_fsl(size(Y,1),100,0.645);    
-% X     = hp_ff*X;    % high pass filter the design
-% Y     = hp_ff*Y;  % high pass filter the data
-% 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat(Y,X,tcon,[],ImgStat,path2mask,1);
+% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat(Y,X,tcon,[],ImgStat,path2mask,1,0,[]);
 % 
 % [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 % [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
@@ -34,7 +37,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,ImgStat,path2mask,badjflag,feat5repeat)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,ImgStat,path2mask,badjflag,feat5repeat,K)
 % Y      : TxV
 % X      : TxEV
 % tcon   : 1xEV
@@ -50,7 +53,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     acfFWHMl   = 5; 
 
     disp('::feat5::')
-    if ~exist('badjflag','var');   badjflag = 0; end;
+    if ~exist('badjflag','var');   badjflag = 0;    end;
+    if ~exist('K','var');          K        = [];   end; 
     
     if ~exist('feat5repeat','var')
         feat5repeat = 0;
@@ -80,7 +84,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     if isempty(tukey_m); tukey_m = round(sqrt(ntp)); end
     
     disp(['feat5:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
-    acf_tukey   = acf_prep(RES,tukey_m,ResidFormingMat);
+    acf_tukey   = acf_prep(RES,tukey_m,ResidFormingMat,K);
 
     % smooth ACF
     acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
@@ -122,7 +126,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
 
 end
 
-function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat)
+function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat,K)
 % RES should be TxV
     
     [ntp,nvox]  = size(RES);
@@ -151,13 +155,17 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat)
     end
     
     % adjust for bias
-    if nargin==3  && ~isempty(ResidFormingMat)
-        disp('feat5:: adjusting autocovariances: start.')
+    disp('feat5:: adjusting autocovariances: start.')
+    if nargin==4  && ~isempty(ResidFormingMat) && ~isempty(K)
+        if ismatrix(K); error('feat5:: adjusting autocovariances: filter should be a matrix'); end; 
+        disp('feat5:: adjusting autocovariances: the filter is injected into the design.')
+        BiasAdj = ACFBiasAdjMat(ResidFormingMat*K,ntp,tukey_m);
+    elseif nargin>=3  && ~isempty(ResidFormingMat) && isempty(K)
         BiasAdj = ACFBiasAdjMat(ResidFormingMat,ntp,tukey_m);
-        disp('feat5:: adjusting autocovariances: done.')
     elseif nargin<3 || isempty(ResidFormingMat)
         BiasAdj = eye(tukey_m+1); 
     end
+    disp('feat5:: adjusting autocovariances: done.')
     
     
     acv         = BiasAdj*acv(1:tukey_m+1,:); %apply adjustment
@@ -230,13 +238,20 @@ end
 
 function invM_biasred = ACFBiasAdjMat(ResidFormingMat,ntp,ARO)
 % Bias adjustment for ACF of residuals. 
-
+% 
+% This is a bit tricky here. Note that ResidFormingMat is symmetric. 
+% So, ResidFormingMat*Di*ResidFormingMat'*Dj == ResidFormingMat*Di*ResidFormingMat'*Dj
+% And therefore, we can have ResidFormingMat = ResidFormingMat*K; if we
+% wanted to inject the K filter into the R. 
+% 
+% Also, note that this is different from Appendix A, Worsely 2002. In terms
+% of implementation. 
     M_biasred   = zeros(ARO+1);
     for i=1:(ARO+1)
         Di                  = (diag(ones(1,ntp-i+1),i-1)+diag(ones(1,ntp-i+1),-i+1))/(1+(i==1));
         for j=1:(ARO+1)
            Dj               = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
-           M_biasred(i,j)   = trace(ResidFormingMat*Di*ResidFormingMat*Dj)/(1+(i>1));
+           M_biasred(i,j)   = trace(ResidFormingMat*Di*ResidFormingMat'*Dj)/(1+(i>1));
         end
     end
     invM_biasred = inv(M_biasred);
