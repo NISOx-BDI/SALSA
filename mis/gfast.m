@@ -31,11 +31,16 @@
 % tcon(2)  = 1;
 % 
 % 
-% W = gfast5(Y,X,0.645); 
+% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfast5(Y,X,0.645,tcon); 
+% 
+% [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
+% [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
+% 
+% figure; hold on; grid on; 
+% plot(PSDx,mean(PSDy,2))
+% plot(WPSDx,mean(WPSDy,2))
 
-
-
-function [W,V,Cy] = gfast(Y,X,TR)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv,W,V,Cy] = gfast(Y,X,TR,tcon,pmethod)
 %[W,V,Cy] = gfast(Y,X,TR)
 % 
 % Y:  Full time series TxV
@@ -55,15 +60,39 @@ function [W,V,Cy] = gfast(Y,X,TR)
 % SA & TEN, Ox, 2020
 %
 
+    if nargin<5; pmethod = 0; end; 
+
     ntp   = size(X,1); 
     nvox  = size(Y,2); 
 
-    [~,~,RES,stat] = myOLS(Y,X); % to get pvalues for Fstats of overall sig.
-    jidx  = find((stat.fp.*nvox)<0.001); % Harsh bonferroni 
-    q     = numel(jidx); 
-
+    [cbhat,~,RES,stat] = myOLS(Y,X); % to get pvalues for Fstats of overall sig.
+    trRV           = stat.df; 
+    
+    se             = stat.se;
+    tv             = stat.tval;
+    zv             = stat.zval;    
+    
+    if pmethod
+    %%% --------------------- pooling by F-statistics
+        disp(['gfast:: pooling by F-statistics.'])
+        jidx  = find((stat.fp.*nvox)<0.001); % Harsh bonferroni 
+        clear stat
+    else
+    %%% ---------------------pooling by ACL/ACF
+        disp(['gfast:: pooling by autocorrelation.'])
+        [acf ,acfCI] = AC_fft(RES,ntp);
+        %acl          = sum(acf(1,1:fix(ntp/4)).^2); % Anderson's suugestion of ignoring beyond ntps/4
+        acf          = acf(:,1+1); %acf(1) 
+        jidx         = find(abs(acf)>acfCI(2));  % only if a voxel exceeds the CI
+        
+       
+        clear acf
+    end
+    
+    q = numel(jidx); 
+    
     if ~q
-        error('gfast:: Something is wrong, there should be at least some voxels significant to the overal design'); 
+        error('gfast:: Something is wrong, there should be at least some voxels significant to the overall design'); 
     else
         disp(['gfast:: Number of pooled voxels: ' num2str(q)])
     end
@@ -76,7 +105,6 @@ function [W,V,Cy] = gfast(Y,X,TR)
     % trRV  = spm_SpUtil('trRV',xX.xKXs);
     % q = spdiags(sqrt(trRV./ResSS(j)'),0,q,q) % this is HUGE! We need chunks
 
-    trRV      = stat.df; clear stat RES
     chunksize = 2000; % this is reasonable, but should be lower if low memory
     nbchunks  = ceil(q/chunksize);
     chunks    = min(cumsum([1 repmat(chunksize,1,nbchunks)]),q+1);
@@ -87,14 +115,14 @@ function [W,V,Cy] = gfast(Y,X,TR)
         disp(['gfast:: chunk ' num2str(ichunk) '/' num2str(nbchunks)])
         chunk  = chunks(ichunk):chunks(ichunk+1)-1;
         jchunk = jidx(chunk);  
-        v      = diag(sqrt(trRV./ResSS(jchunk)'));
-
-        Yc     = Y(:,jchunk)*v;
+        %sd     = 1./diag(sqrt(trRV./ResSS(jchunk)'));
+        sd     = sqrt(ResSS(jchunk)/trRV);
+        Yc     = Y(:,jchunk)./sd;
         Cy     = Cy + Yc*Yc';
     end
     Cy = Cy/q; %Average across the pool 
 
-    clear Y Yc v 
+    clear Yc v 
 
     % FAST variance components for FAST
     Vi      = spm_Ce('fast',ntp,TR);
@@ -102,11 +130,22 @@ function [W,V,Cy] = gfast(Y,X,TR)
     % Call ReML to get the auto-covariance of the system
     disp('gfast:: Finding autocovariance matrix using ReML')
     V       = spm_reml(Cy,X,Vi);
-    V       = V*ntp/trace(V); % make sure the covariance matrix is non-degenrate
+    V       = V*ntp/trace(V); 
 
     % Prewhitening Matrix, W
     disp('gfast:: getting global whitening matrix.')
     W      = spm_sqrtm(spm_inv(V));
     W      = W.*(abs(W)> 1e-6);
-
+    
+    % Prewhiten the X & Y globally 
+    disp('gfast:: Refit the prewhitened model.')
+    WY = W*Y;
+    WX = W*X; 
+    
+    disp('gfast:: Refit the prewhitened model.')
+    [Wcbhat,WYhat,WRES,wstat] = myOLS(WY,WX,tcon);
+    wse  = wstat.se;
+    wtv  = wstat.tval;
+    wzv  = wstat.zval;
+        
 end
