@@ -36,68 +36,77 @@
 
 
 function [W,V,Cy] = gfast(Y,X,TR)
+%[W,V,Cy] = gfast(Y,X,TR)
+% 
+% Y:  Full time series TxV
+% X:  Full design TxP 
+% TR: Repetion Time [float scalar]
+% 
+% W:  Whitening matrix [TxT sparse matrix]
+% V:  Autocorrelation Matrix [TxT matrix]
+% Cy: Covariance of Y [TxT matrix]
+% 
 % Reimplementation of SPM FAST
 % Uses p-values of overal significance for pooling
 % 
 % You need SPM to run this. 
-% The execution time is _mainly_ dependent of the time series length not the number
-% of voxels. 
+% The execution time is _mainly_ dependent on the length of time series
 %
-% SA, Ox, 2020
+% SA & TEN, Ox, 2020
 %
 
-ntp   = size(X,1); 
-nvox  = size(Y,2); 
+    ntp   = size(X,1); 
+    nvox  = size(Y,2); 
 
-[~,~,RES,stat] = myOLS(Y,X); % to get pvalues for Fstats of overall sig.
-jidx  = find((stat.fp.*size(Y,2))<0.001); % Harsh bonferroni 
-q     = numel(jidx); 
+    [~,~,RES,stat] = myOLS(Y,X); % to get pvalues for Fstats of overall sig.
+    jidx  = find((stat.fp.*nvox)<0.001); % Harsh bonferroni 
+    q     = numel(jidx); 
 
-if ~q
-    error('gfast:: Something is wrong, there should be at least some voxels significant to the overal design'); 
-else
-    disp(['gfast:: Number of pooled voxels: ' num2str(q)])
-end
+    if ~q
+        error('gfast:: Something is wrong, there should be at least some voxels significant to the overal design'); 
+    else
+        disp(['gfast:: Number of pooled voxels: ' num2str(q)])
+    end
 
-ResSS = sum(RES.^2); 
+    ResSS = sum(RES.^2); 
 
-% Whole business below is to get the (quick) effective DOF for multiple session setting. 
-% xX.xKXs      = spm_sp('Set',spm_filter(xX.K,xX.W*xX.X));
-% xX.xKXs.X    = full(xX.xKXs.X);
-% trRV  = spm_SpUtil('trRV',xX.xKXs);
-% q = spdiags(sqrt(trRV./ResSS(j)'),0,q,q) % this is HUGE! We need chunks
+    % Whole business below is to get the (quick) effective DOF for multiple session setting. 
+    % xX.xKXs      = spm_sp('Set',spm_filter(xX.K,xX.W*xX.X));
+    % xX.xKXs.X    = full(xX.xKXs.X);
+    % trRV  = spm_SpUtil('trRV',xX.xKXs);
+    % q = spdiags(sqrt(trRV./ResSS(j)'),0,q,q) % this is HUGE! We need chunks
 
-trRV      = stat.df; clear stat RES
-chunksize = 2000; % this is reasonable, but should be lower if low memory
-nbchunks  = ceil(q/chunksize);
-chunks    = min(cumsum([1 repmat(chunksize,1,nbchunks)]),q+1);
+    trRV      = stat.df; clear stat RES
+    chunksize = 2000; % this is reasonable, but should be lower if low memory
+    nbchunks  = ceil(q/chunksize);
+    chunks    = min(cumsum([1 repmat(chunksize,1,nbchunks)]),q+1);
 
 
-Cy = 0; 
-for ichunk = 1:nbchunks
-    disp(['gfast:: chunk ' num2str(ichunk) '/' num2str(nbchunks)])
-    chunk  = chunks(ichunk):chunks(ichunk+1)-1;
-    jchunk = jidx(chunk);  
-    v      = diag(sqrt(trRV./ResSS(jchunk)'));
-    
-    Yc     = Y(:,jchunk)*v;
-    Cy     = Cy + Yc*Yc';
-end
-Cy = Cy/q;
+    Cy = 0; 
+    for ichunk = 1:nbchunks
+        disp(['gfast:: chunk ' num2str(ichunk) '/' num2str(nbchunks)])
+        chunk  = chunks(ichunk):chunks(ichunk+1)-1;
+        jchunk = jidx(chunk);  
+        v      = diag(sqrt(trRV./ResSS(jchunk)'));
 
-clear Y Yc v 
+        Yc     = Y(:,jchunk)*v;
+        Cy     = Cy + Yc*Yc';
+    end
+    Cy = Cy/q; %Average across the pool 
 
-% FAST variance components for FAST
-Vi      = spm_Ce('fast',ntp,TR);
+    clear Y Yc v 
 
-% Call ReML to get the auto-covariance of the system
-disp('gfast:: Finding autocovariance matrix using ReML')
-V       = spm_reml(Cy,X,Vi);
-V       = V*ntp/trace(V); % make sure the covariance matrix is not non-degenrate
+    % FAST variance components for FAST
+    Vi      = spm_Ce('fast',ntp,TR);
 
-% Prewhitening Matrix, W
-disp('gfast:: getting global whitening matrix.')
-W      = spm_sqrtm(spm_inv(V));
-W      = W.*(abs(W)> 1e-6);
+    % Call ReML to get the auto-covariance of the system
+    disp('gfast:: Finding autocovariance matrix using ReML')
+    V       = spm_reml(Cy,X,Vi);
+    V       = V*ntp/trace(V); % make sure the covariance matrix is non-degenrate
+
+    % Prewhitening Matrix, W
+    disp('gfast:: getting global whitening matrix.')
+    W      = spm_sqrtm(spm_inv(V));
+    W      = W.*(abs(W)> 1e-6);
 
 end
