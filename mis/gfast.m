@@ -76,7 +76,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv,W,V,Cy] = gfast(
     %%% --------------------- pooling by F-statistics
         disp(['gfast:: pooling by F-statistics.'])
         jidx  = find((stat.fp.*nvox)<0.001); % Harsh bonferroni 
-        clear stat
+        %clear stat
     else
     %%% ---------------------pooling by ACL/ACF
         disp(['gfast:: pooling by autocorrelation.'])
@@ -138,7 +138,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv,W,V,Cy] = gfast(
     W      = W.*(abs(W)> 1e-6);
     
     % Prewhiten the X & Y globally 
-    disp('gfast:: Refit the prewhitened model.')
+    disp('gfast:: Whiten the data and the design')
     WY = W*Y;
     WX = W*X(:,2:end); %exclude the intercept while prewhitening
     
