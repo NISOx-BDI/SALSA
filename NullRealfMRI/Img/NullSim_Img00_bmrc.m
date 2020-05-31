@@ -202,7 +202,7 @@ MPparamNum = 0;
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask,K);
 elseif strcmpi(pwdmethod,'gFAST') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfast(Y,X,TR,tcon,1);
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfast(Y,X,TR,glmcont,1);
 elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
     FeatRepeat = 0;
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,FeatRepeat,K);   
