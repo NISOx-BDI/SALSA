@@ -29,16 +29,14 @@ function [cbhat,Yhat,RES,stat] = myOLS(Y,X,contrast)
         contrast(2) = 1;
     end
     
-     
-    stat.mse   = sum(RES.^2)./(t-p);
-    
-    
     VarYhat    = sum(Yhat.^2);
     VarY       = sum(Y.^2);
     R2         = VarYhat./VarY; % R-squared
     stat.f     = (R2*(t-p))./((1-R2).*(p-1)); %F statsitics
     stat.fp    = 1-fcdf(stat.f,(p-1),(t-p));
     
+    
+    stat.mse   = sum(RES.^2)./(t-p);
     stat.se    = sqrt(stat.mse*(contrast*pinv(COVX)*contrast'));
     
     cbhat      = contrast*stat.Bhat;
