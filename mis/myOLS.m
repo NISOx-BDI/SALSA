@@ -33,7 +33,7 @@ function [cbhat,Yhat,RES,stat] = myOLS(Y,X,contrast)
     VarY       = sum(Y.^2);
     R2         = VarYhat./VarY; % R-squared
     stat.f     = (R2*(t-p))./((1-R2).*(p-1)); %F statsitics
-    stat.fp    = 1-fcdf(stat.f,(p-1),(t-p));
+    stat.fp    = 1-myOLS_fcdf(stat.f,(p-1),(t-p));
     
     
     stat.mse   = sum(RES.^2)./(t-p);
@@ -86,6 +86,24 @@ p(ix) = 1 - p(ix);
 
 % shape output
 p = reshape(p,size(x));
+
+end
+
+
+function cdf = myOLS_fcdf (x,m,n)
+% A dubm quick function for fcdf. 
+% Octave doesn't have one (BMRC Octave)
+%
+% SA, Ox, 2020
+%
+  cdf = zeros (size (x));
+
+  k = (x > 0) & (x < Inf) & (m > 0) & (m < Inf) & (n > 0) & (n < Inf);
+  if (isscalar (m) && isscalar (n))
+    cdf(k) = 1 - betainc (1 ./ (1 + m * x(k) / n), n/2, m/2);
+  else
+    cdf(k) = 1 - betainc (1 ./ (1 + m(k) .* x(k) ./ n(k)), n(k)/2, m(k)/2);
+  end
 
 end
 
