@@ -140,9 +140,10 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv,W,V,Cy] = gfast(
     % Prewhiten the X & Y globally 
     disp('gfast:: Refit the prewhitened model.')
     WY = W*Y;
-    WX = W*X; 
+    WX = W*X(:,2:end); %exclude the intercept while prewhitening
     
     disp('gfast:: Refit the prewhitened model.')
+    WX = [ones(ntp,1) WX]; % add back the intercept
     [Wcbhat,WYhat,WRES,wstat] = myOLS(WY,WX,tcon);
     wse  = wstat.se;
     wtv  = wstat.tval;
