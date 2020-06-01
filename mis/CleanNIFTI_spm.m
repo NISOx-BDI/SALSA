@@ -304,7 +304,7 @@ if ~isempty(ImgStat) && isnumeric(V0) && SaveFlag
         ImgStat(it).private.dat.fname = Dir2Save;
         spm_write_vol(ImgStat(it),Y_tmp(:,:,:,it));
     end
-    system(['gzip ' Dir2Save]);
+    system(['gzip -f ' Dir2Save]);
     %save_avw(Y_tmp,Dir2Save,datatype,ImgStat.voxelsize);
     clear *_tmp clear V_Img;
 else
