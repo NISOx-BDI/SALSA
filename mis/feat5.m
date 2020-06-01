@@ -39,7 +39,7 @@
 
 function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,ImgStat,path2mask,badjflag,feat5repeat,K)
 % Y      : TxV
-% X      : TxEV
+% X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
 % tukey_m: int
 %
@@ -95,9 +95,10 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     WY          = prewhiten_timeseries(Y,W_fft);
 
     % Prewhiten the design
-    X_fft       = fft_model(X);
+    Xnoint      = X(:,2:end); % put aside the intercept when prewhitening the design
+    Xnoint_fft  = fft_model(Xnoint);
 
-    % refit the model to pre-whitened data
+    % refit the model to pre-whitened data -------------------------------
     Wcbhat = zeros(1,nvox);
     WYhat  = zeros(ntp,nvox); 
     WRES   = zeros(ntp,nvox);
@@ -108,19 +109,23 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     disp('feat5:: Refit the prewhitened model.')
     for iv = 1:nvox
         if ~mod(iv,5000); disp(['feat5:: on voxel: ' num2str(iv)]); end; 
-        WX                        = prewhiten_model(X_fft,W_fft(:,iv),ntp);
+        WXnoint = prewhiten_model(Xnoint_fft,W_fft(:,iv),ntp);
+        WX      = [ones(ntp,1),WXnoint]; % add back the intercept 
         [Wcbhat(iv),WYhat(:,iv),WRES(:,iv),wstat] = myOLS(WY(:,iv),WX,tcon);
 
         wse(iv)  = wstat.se;
         wtv(iv)  = wstat.tval;
         wzv(iv)  = wstat.zval;    
     end
+    %----------------------------------------------------------------------
     
+    % Re-iterate the whitening with the origina X -- should not be used ---
     if feat5repeat
         disp('feat5:: We iterate again...')
         % We send the prewhitened Y, with the original X in again
        [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,X,tcon,-2,ImgStat,path2mask,badjflag); 
     end
+    %----------------------------------------------------------------------
     
     disp('feat5:: done.')
 
@@ -236,26 +241,40 @@ function WX = prewhiten_model(X_fft,W_fft_v,ntp)
     end
 end
 
-function invM_biasred = ACFBiasAdjMat(ResidFormingMat,ntp,ARO)
+function invM_biasred = ACFBiasAdjMat(R,ntp,ARO)
 % Bias adjustment for ACF of residuals. 
 % 
 % This is a bit tricky here. Note that ResidFormingMat is symmetric. 
-% So, ResidFormingMat*Di*ResidFormingMat'*Dj == ResidFormingMat*Di*ResidFormingMat'*Dj
-% And therefore, we can have ResidFormingMat = ResidFormingMat*K; if we
-% wanted to inject the K filter into the R. 
+% So, R'*Di*R*Dj == R'*Di*R*Dj
+% And therefore, we can have R = R*K; if we wanted to inject the K filter into the R. 
 % 
-% Also, note that this is different from Appendix A, Worsely 2002. In terms
+% SA, Ox, 2020
+
+% fmristat implementation ------------------------------------------------
 % of implementation. 
+%     M_biasred   = zeros(ARO+1);
+%     for i=1:(ARO+1)
+%         Di                  = (diag(ones(1,ntp-i+1),i-1)+diag(ones(1,ntp-i+1),-i+1))/(1+(i==1));
+%         for j=1:(ARO+1)
+%            Dj               = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
+%            M_biasred(i,j)   = trace(ResidFormingMat'*Di*ResidFormingMat*Dj)/(1+(i>1));
+%         end
+%     end
+%     invM_biasred = inv(M_biasred);
+% ------------------------------------------------------------------------
+
+% Appendix A & then mofidied for K from the MS Notes ---------------------
     M_biasred   = zeros(ARO+1);
-    for i=1:(ARO+1)
-        Di                  = (diag(ones(1,ntp-i+1),i-1)+diag(ones(1,ntp-i+1),-i+1))/(1+(i==1));
-        for j=1:(ARO+1)
-           Dj               = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
-           M_biasred(i,j)   = trace(ResidFormingMat*Di*ResidFormingMat'*Dj)/(1+(i>1));
+    for l = 1:(ARO+1)
+        Dl = diag(ones(1,ntp-l+1),l-1); % upper triangle
+        for j = 1:(ARO+1)
+           DjDjt            = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
+           M_biasred(l,j)   = trace(R'*Dl*R*DjDjt);
         end
     end
     invM_biasred = inv(M_biasred);
-    
+% ------------------------------------------------------------------------
+
 end
 
 function where2stop = FindBreakPoint(acf,T)
