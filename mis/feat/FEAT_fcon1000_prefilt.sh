@@ -12,16 +12,22 @@ SubID=$2
 SesID="DS2"
 
 #example:
-# BIDS_FEAT_prefilt.sh ROCKLAND A00028429 DS2 645
+# FEAT_fcon1000_prefilt.sh Cambridge 00156
 
 #TR=$4
 
-betflag=1
-flag_feat1=1
-flag_feat2=1
-flag_fnirt1=0
-flag_icaaroma=1
+betflag=0
+flag_feat1=0
+flag_fast=1
+flag_feat2=0
+flag_fnirt1=1
+flag_smooth=0
+flag_icaaroma=0
+
 #module add fsl
+
+#smoothing parameters
+FWHMl=5
 
 coblar=0
 
@@ -56,7 +62,8 @@ cd ${fMRIPREP}
 echo "RESULTS: ${fMRIPREP}"
 echo ""
 
-pwd
+
+cp ${ANATIMG}.nii.gz ${fMRIPREP}/ # take the image to the R_mpp directory
 
 if [ $betflag == 1 ]; then
 	echo ""
@@ -88,23 +95,46 @@ else
 fi
 
 if [ $flag_fnirt1 == 1 ]; then
-#runFlirt highres standard $standardDof $standardSearch trilinear $htmlReport "" "$nonLinearResolution" $logFile $fnirtConfig
-	    ini=highres
-            refi=standard
-	    wr=10
-
-	    flirt 
-
-	    immv ${ini}2${refi} ${ini}2${refi}_linear
-
-            ${FSLDIR}/bin/fslmaths $ANATIMG ${ini}_head
-	    ${FSLDIR}/bin/fnirt --iout=${ini}2${refi}_head --in=${ini}_head --aff=${ini}2${refi}.mat \
-	--cout=${ini}2${refi}_warp --iout=${ini}2${refi} --jout=${ini}2${refi}_jac --config="T1_2_MNI152_2mm" \
-	--ref=${refi}_head --refmask=${refi}_mask --warpres=${wr},${wr},${wr}
-
-	    ${FSLDIR}/bin/applywarp -i ${ini} -r ${refi} -o ${ini}2${refi} -w ${ini}2${refi}_warp
+	sh ${HOME}/bin/FILM2/mis/feat/reg_fun2mni.sh ${fMRIPREP}/${ANATIMGNAME}
 else
 	echo "Not going to do an independent nonlin registration."
+fi
+
+
+if [ $flag_fast == 1 ]; then
+        mkdir -p ${fMRIPREP}/seg
+        echo "Applying fast on T1 image."
+
+        # Apply FAST on the T1 images
+        ${FSLDIR}/bin/fast -n 3 -g \
+        -o ${fMRIPREP}/seg/${ANATIMGNAME} \
+        ${fMRIPREP}/${ANATIMGNAME}_brain.nii.gz
+
+       ${FSLDIR}/bin/applywarp --interp=nn \
+       --ref=example_func \
+       --in=${fMRIPREP}/seg/${ANATIMGNAME}_seg \
+       --out=${fMRIPREP}/seg/${ANATIMGNAME}_func_seg \
+       --premat=${fMRIPREP}/reg/highres2example_func.mat
+
+
+        # Take FAST results into the EPI space.
+        for segi in 0 1 2; do
+                echo "Take ${fMRIPREP}/seg/${ANATIMGNAME}_seg_${segi} into EPI space"
+
+                ${FSLDIR}/bin/applywarp --interp=nn \
+                --ref=example_func \
+                --in=${fMRIPREP}/seg/${ANATIMGNAME}_seg_${segi} \
+                --out=${fMRIPREP}/seg/${ANATIMGNAME}_func_seg_${segi} \
+                --premat=${fMRIPREP}/reg/highres2example_func.mat
+
+                echo "Take ${fMRIPREP}/seg/${ANATIMGNAME}_pve_${segi} into EPI space"
+                ${FSLDIR}/bin/applywarp --interp=trilinear \
+                --ref=example_func \
+                --in=${fMRIPREP}/seg/${ANATIMGNAME}_pve_${segi} \
+                --out=${fMRIPREP}/seg/${ANATIMGNAME}_func_pve_${segi} \
+                --premat=${fMRIPREP}/reg/highres2example_func.mat
+
+        done
 fi
 
 
@@ -143,21 +173,55 @@ else
 fi
 
 
+# Do the smoothing
+if [ $flag_smooth == 1 ]; then
+
+        origimage=${fMRIPREP}/prefiltered_func_data_bet
+        finalresult=${origimage}_fwhm${FWHMl}
+
+        maskimage=${fMRIPREP}/mask
+
+        smoothparSig=$(bc -l <<< "${FWHMl}/2.3548")
+
+        echo "===SMOOTHING:"
+        echo "-IN:   ${origimage}"
+        echo "-MASK: ${maskimage}"
+        echo "-OUT:  ${finalresult}"
+        echo "-KERNEL(mm): ${FWHMl} , sigma: ${smoothparSig}"
+        echo ""
+
+
+        ${FSLDIR}/bin/fslmaths $origimage -s $smoothparSig -mas $maskimage tmp_result1_tmp
+        ${FSLDIR}/bin/fslmaths $maskimage -s $smoothparSig -mas $maskimage $finalresult
+        ${FSLDIR}/bin/fslmaths tmp_result1_tmp -div $finalresult $finalresult
+
+        PREFILTIMG=${finalresult}
+
+        ${FSLDIR}/bin/imrm tmp_result1_tmp
+else
+    	PREFILTIMG=${fMRIPREP}/prefiltered_func_data_bet
+        echo "NO SMOOTHING"
+fi
+
+
+
 # RUN ICA-AROMA
 if [ $flag_icaaroma == 1 ]; then
 
-	echo "*** ICA-AROMA"
+        echo "*** ICA-AROMA"
 
-	#module load Python
-	rm -rf ${fMRIPREP}/ica-aroma
-	mkdir -p ${fMRIPREP}/ica-aroma
+        #module load Python
+        ica_dir=${fMRIPREP}/ica-aroma_fwhm${FWHMl}
+        rm -rf ${ica_dir}
+        mkdir -p ${ica_dir}
 
-	python3.6 /users/nichols/scf915/ICA-AROMA/ICA_AROMA.py \
-	-in ${fMRIPREP}/prefiltered_func_data_bet.nii.gz \
-	-affmat ${fMRIPREP}/reg/example_func2standard.mat \
-	-mc ${fMRIPREP}/prefiltered_func_data_mcf.par \
-	-out ${fMRIPREP}/ica-aroma \
-	-den both
+        python3.6 /users/nichols/scf915/ICA-AROMA/ICA_AROMA.py \
+        -in ${PREFILTIMG}.nii.gz \
+        -affmat ${fMRIPREP}/reg/example_func2standard.mat \
+        -mc ${fMRIPREP}/prefiltered_func_data_mcf.par \
+        -out ${ica_dir} \
+        -den both
+
 fi
 
 

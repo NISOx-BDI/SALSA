@@ -1,38 +1,25 @@
 #!/bin/bash
 set -e
 
-#module load fsl/6.0.3
-#module load Python/3.6.6-foss-2018b
-
-module load Python/3.6.6-foss-2018b
-module load fsl/6.0.3
-
 COHORT=$1
 SubID=$2
 SesID=$3
 AQLAB=$4
 
-#example:
-# BIDS_FEAT_prefilt.sh ROCKLAND A00028429 DS2 645
-
 #TR=$4
 
-betflag=0
-flag_feat1=0
-flag_fast=1
-flag_feat2=0
-flag_fnirt1=1
-flag_smooth=0
-flag_icaaroma=0
+betflag=1
+flag_feat1=1
+flag_feat2=1
 
 #module add fsl
 
-#smoothing parameters
-FWHMl=5
-
-coblar=0
+coblar=1
 
 ImageDir="/well/nichols/users/scf915/${COHORT}/raw/sub-${SubID}/ses-${SesID}"
+
+
+#---------- RAW IMAGE PATHS --------------------------------------
 
 #FUNCIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
 FUNIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
@@ -40,6 +27,8 @@ FUNCIMG=${ImageDir}/func/${FUNIMGNAME}
 
 ANATIMGNAME=sub-${SubID}_ses-${SesID}_T1w
 ANATIMG=${ImageDir}/anat/${ANATIMGNAME}
+
+#-----------------------------------------------------------------
 
 STANIMG=${FSLDIR}/data/standard/MNI152_T1_2mm_brain
 
@@ -60,7 +49,7 @@ cd ${fMRIPREP}
 echo "RESULTS: ${fMRIPREP}"
 echo ""
 
-cp ${ANATIMG}.nii.gz ${fMRIPREP}/ # take the image to the R_mpp directory
+pwd
 
 if [ $betflag == 1 ]; then
 	echo ""
@@ -81,58 +70,12 @@ if [ $flag_feat1 == 1 ]; then
 	-R ${fMRIPREP}/report_unwarp.html \
 	-r ${fMRIPREP}/report_reg.html  \
 	-i ${fMRIPREP}/example_func.nii.gz  \
-	-n 10 \
 	-h ${ANATIMGNAME}_brain \
 	-w BBR -x 90 \
 	-s ${STANIMG} -y 12 -z 90 
 else
-	echo "NO BBR"
+	echo "Pass the first stage!"
 fi
-
-if [ $flag_fnirt1 == 1 ]; then
-#runFlirt highres standard $standardDof $standardSearch trilinear $htmlReport "" "$nonLinearResolution" $logFile $fnirtConfig
-	sh ${HOME}/bin/FILM2/mis/feat/reg_fun2mni.sh ${fMRIPREP}/${ANATIMGNAME}
-else
-	echo "Not going to do an independent nonlin registration."
-fi
-
-
-if [ $flag_fast == 1 ]; then
-	mkdir -p ${fMRIPREP}/seg
-	echo "Applying fast on T1 image."
-
-	# Apply FAST on the T1 images
-	${FSLDIR}/bin/fast -n 3 -g \
-	-o ${fMRIPREP}/seg/${ANATIMGNAME} \
-	${fMRIPREP}/${ANATIMGNAME}_brain.nii.gz
-
-       ${FSLDIR}/bin/applywarp --interp=nn \
-       --ref=example_func \
-       --in=${fMRIPREP}/seg/${ANATIMGNAME}_seg \
-       --out=${fMRIPREP}/seg/${ANATIMGNAME}_func_seg \
-       --premat=${fMRIPREP}/reg/highres2example_func.mat
-
-
-	# Take FAST results into the EPI space.
-	for segi in 0 1 2; do
-		echo "Take ${fMRIPREP}/seg/${ANATIMGNAME}_seg_${segi} into EPI space"
-
-		${FSLDIR}/bin/applywarp --interp=nn \
-		--ref=example_func \
-		--in=${fMRIPREP}/seg/${ANATIMGNAME}_seg_${segi} \
-		--out=${fMRIPREP}/seg/${ANATIMGNAME}_func_seg_${segi} \
-		--premat=${fMRIPREP}/reg/highres2example_func.mat
-
-		echo "Take ${fMRIPREP}/seg/${ANATIMGNAME}_pve_${segi} into EPI space"
-		${FSLDIR}/bin/applywarp --interp=trilinear \
-                --ref=example_func \
-                --in=${fMRIPREP}/seg/${ANATIMGNAME}_pve_${segi} \
-                --out=${fMRIPREP}/seg/${ANATIMGNAME}_func_pve_${segi} \
-                --premat=${fMRIPREP}/reg/highres2example_func.mat
-
-	done
-fi
-
 
 if [ $flag_feat2 == 1 ]; then
 
@@ -162,60 +105,6 @@ if [ $flag_feat2 == 1 ]; then
 	#/usr/local/fsl/bin/fslstats prefiltered_func_data_mcf -k mask -p 50
 	#${FSLDIR}/bin/fslmaths mask -dilF mask
 	#${FSLDIR}/bin/fslmaths prefiltered_func_data_mcf -mas mask prefiltered_func_data_thresh
-
-else
-	echo "NO MCFLIRT"
-
-fi
-
-# Do the smoothing
-if [ $flag_smooth == 1 ]; then
-
-	origimage=${fMRIPREP}/prefiltered_func_data_bet
-	finalresult=${origimage}_fwhm${FWHMl}
-
-	maskimage=${fMRIPREP}/mask
-
-	smoothparSig=$(bc -l <<< "${FWHMl}/2.3548")
-
-	echo "===SMOOTHING:"
-	echo "-IN:   ${origimage}"
-	echo "-MASK: ${maskimage}"
-	echo "-OUT:  ${finalresult}"
-	echo "-KERNEL(mm): ${FWHMl} , sigma: ${smoothparSig}"
-	echo ""
-
-
-	${FSLDIR}/bin/fslmaths $origimage -s $smoothparSig -mas $maskimage tmp_result1_tmp
-	${FSLDIR}/bin/fslmaths $maskimage -s $smoothparSig -mas $maskimage $finalresult
-	${FSLDIR}/bin/fslmaths tmp_result1_tmp -div $finalresult $finalresult
-
-	PREFILTIMG=${finalresult}
-
-	${FSLDIR}/bin/imrm tmp_result1_tmp
-else
-	PREFILTIMG=${fMRIPREP}/prefiltered_func_data_bet
-	echo "NO SMOOTHING"
-fi
-
-
-
-# RUN ICA-AROMA
-if [ $flag_icaaroma == 1 ]; then
-
-	echo "*** ICA-AROMA"
-
-	#module load Python
-	ica_dir=${fMRIPREP}/ica-aroma_fwhm${FWHMl}
-	rm -rf ${ica_dir}
-	mkdir -p ${ica_dir}
-
-	python3.6 /users/nichols/scf915/ICA-AROMA/ICA_AROMA.py \
-	-in ${PREFILTIMG}.nii.gz \
-	-affmat ${fMRIPREP}/reg/example_func2standard.mat \
-	-mc ${fMRIPREP}/prefiltered_func_data_mcf.par \
-	-out ${ica_dir} \
-	-den both
 fi
 
 
