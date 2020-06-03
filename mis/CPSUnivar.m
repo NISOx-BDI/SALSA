@@ -1,11 +1,18 @@
 function [CPS,stat,CPZ] = CPSUnivar(Resid,X)
 % Resid : resiuldas [Time x Voxel]
-% X     : design [Time x P]
+% X     : design [Time x P] OR an integer indicating the DoFs
 % 
 % TEN & SA, Ox, 2020
 
 nScan = size(Resid,1);
-nVar = rank(X);
+
+nX = size(X); % all I need is rank of X, so don't need to pass the whole X
+if any(nX(1)==nScan)
+    nVar = rank(X);
+elseif all(nX==1)
+    nVar = X; % input is DoF
+end
+
 nVox = size(Resid,2); 
 
 Spec = abs(fft(Resid,nScan-nVar)).^2;
