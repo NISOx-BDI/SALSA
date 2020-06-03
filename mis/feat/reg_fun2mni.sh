@@ -1,5 +1,7 @@
 #bin/bash
 
+set -e
+
 # It is almost copy of what is happened in feat
 # SA, Ox, 2020
 
@@ -11,11 +13,12 @@
 
 #REGDIR=
 #HEADIMG=/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326/ses-DS2/anat/sub-A00008326_ses-DS2_T1w
+# /well/nichols/users/scf915/ROCKLAND/R_mpp/sub-A00028766/ses-DS2/sub-A00028766_ses-DS2_task-rest_acq-645_bold_mpp/sub-A00028766_ses-DS2_T1w.nii.gz
 
 HEADIMG=$1
 
-ImgDir=$(dirname HEADIMG)
-REGDIR="ImgDir/reg"
+ImgDir=$(dirname ${HEADIMG})
+REGDIR="${ImgDir}/reg"
 
 STNDHEAD=${FSLDIR}/data/standard/MNI152_T1_2mm
 
@@ -37,6 +40,7 @@ ${FSLDIR}/bin/fslmaths ${STNDHEAD}_brain_mask_dil standard_mask
 ###################################################
 # BBR: epi >> highres_head
 ###################################################
+echo "Running BBR"
 ${FSLDIR}/bin/epi_reg --epi=example_func --t1=highres_head --t1brain=highres --out=example_func2highres
 ${FSLDIR}/bin/convert_xfm -inverse -omat highres2example_func.mat example_func2highres.mat
 
