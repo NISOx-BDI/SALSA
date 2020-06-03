@@ -27,7 +27,7 @@ if (nargin >= 3)
     error('Omitted subset not full rank')
   end
 else
-  Done=false
+  Done=false;
   while (~Done)
     I1 = randperm(N,N-P);
     I0 = setdiff(1:N,I1);
@@ -39,6 +39,11 @@ end
 
 % Magnus, J. R., & Sinha, A. K. (2005). On Theil’s errors. The Econometrics
 % Journal, 8(1), 39–54.
+
+% Well doesn't speed up that much. 
+% XtX     =  X'*X;
+% XinvXtX =  X/XtX;
+% M       = eye(N) - XinvXtX*X';
 
 M    = eye(N) - X*inv(X'*X)*X';
 S    = eye(N); 
