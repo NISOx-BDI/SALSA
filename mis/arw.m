@@ -81,12 +81,13 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,
     
     % refit the model to pre-whitened data
     disp('arw:: Refit the prewhitened model.')
-    Wcbhat  = zeros(1,nvox);
-    WYhat   = zeros(ntp,nvox); 
-    WRES    = zeros(ntp,nvox);
-    wse     = zeros(nvox,1); 
-    wtv     = zeros(nvox,1);
-    wzv     = zeros(nvox,1);
+    Wcbhat   = zeros(1,nvox);
+    WYhat    = zeros(ntp,nvox); 
+    WRES     = zeros(ntp,nvox);
+    WBLUSRES = zeros(ntp,nvox);
+    wse      = zeros(nvox,1); 
+    wtv      = zeros(nvox,1);
+    wzv      = zeros(nvox,1);
     for iv = 1:nvox
         if ~mod(iv,5000); disp(['on voxel: ' num2str(iv)]); end; 
         sqrtmVhalf = establish_prewhiten_matrix(dRESacov(:,iv),ntp,BiasAdj);
@@ -98,6 +99,9 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,
         wtv(iv)  = wstat.tval;
         wzv(iv)  = wstat.zval;
         %WY(:,iv)   = WYv;
+        
+        % BLUSres
+        WBLUSRES(:,iv)                            = BLUSres(WYv,WX,1:size(WX,2));        
     end
 
 end
