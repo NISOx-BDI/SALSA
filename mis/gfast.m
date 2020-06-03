@@ -40,7 +40,7 @@
 % plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv,W,V,Cy] = gfast(Y,X,TR,tcon,pmethod)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv,W,V,Cy] = gfast(Y,X,TR,tcon,pmethod)
 %[W,V,Cy] = gfast(Y,X,TR)
 % 
 % Y:  Full time series TxV
@@ -148,5 +148,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv,W,V,Cy] = gfast(
     wse  = wstat.se;
     wtv  = wstat.tval;
     wzv  = wstat.zval;
+    
+    %BLUSres
+    WBLUSRES(:,iv) = BLUSres(WY,WX,1:size(WX,2));
         
 end

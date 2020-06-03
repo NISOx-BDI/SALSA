@@ -37,7 +37,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,ImgStat,path2mask,badjflag,feat5repeat,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,ImgStat,path2mask,badjflag,feat5repeat,K)
 % Y      : TxV
 % X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
@@ -99,23 +99,29 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     Xnoint_fft  = fft_model(Xnoint);
 
     % refit the model to pre-whitened data -------------------------------
-    Wcbhat = zeros(1,nvox);
-    WYhat  = zeros(ntp,nvox); 
-    WRES   = zeros(ntp,nvox);
-    wse    = zeros(nvox,1); 
-    wtv    = zeros(nvox,1);
-    wzv    = zeros(nvox,1);
+    Wcbhat   = zeros(1,nvox);
+    WYhat    = zeros(ntp,nvox); 
+    WRES     = zeros(ntp,nvox);
+    WBLUSRES = zeros(ntp,nvox);
+    wse      = zeros(nvox,1); 
+    wtv      = zeros(nvox,1);
+    wzv      = zeros(nvox,1);
     
     disp('feat5:: Refit the prewhitened model.')
     for iv = 1:nvox
         if ~mod(iv,5000); disp(['feat5:: on voxel: ' num2str(iv)]); end; 
         WXnoint = prewhiten_model(Xnoint_fft,W_fft(:,iv),ntp);
         WX      = [ones(ntp,1),WXnoint]; % add back the intercept 
+        
+        %GLS
         [Wcbhat(iv),WYhat(:,iv),WRES(:,iv),wstat] = myOLS(WY(:,iv),WX,tcon);
 
         wse(iv)  = wstat.se;
         wtv(iv)  = wstat.tval;
         wzv(iv)  = wstat.zval;    
+        
+        % BLUSres
+        WBLUSRES(:,iv) = BLUSres(WY(:,iv),WX,1:size(WX,2));
     end
     %----------------------------------------------------------------------
     
@@ -132,7 +138,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
 end
 
 function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat,K)
-% RES should be TxV
+% RES should be TxV. T is time, V voxel. 
     
     [ntp,nvox]  = size(RES);
     [~,~,acv]   = AC_fft(RES,ntp);
@@ -192,9 +198,9 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat,K)
 end
 
 function W_fft = establish_pwfilter(acf,ntp)
-% acf : MxV matrix. M is the tukey M
+% acf : MxV matrix. M is the tukey M. V is voxel
     nvox                              = size(acf,2); 
-    z_pad                             = 2.^ceil(log(ntp)/log(2));
+    z_pad                             = 2.^ceil(log(ntp)/log(2)); % that is 2.^nextpow2 
     tukey_m                           = size(acf,1);
     acf_kernel                        = zeros(z_pad, nvox);
     acf_kernel(1:tukey_m,:)           = acf;
@@ -212,7 +218,7 @@ function W_fft = establish_pwfilter(acf,ntp)
 end
 
 function WY = prewhiten_timeseries(Y,W_fft)
-% Y is TxV
+% Y is TxV. T is time, V is voxel.
     ntp   = size(Y,1);
     z_pad = 2.^ceil(log(ntp)/log(2));
     Y_fft = fft(Y,z_pad,1);

@@ -38,7 +38,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,ImgStat,path2mask,badjflag,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,ImgStat,path2mask,badjflag,K)
 % Performs two stage prewhitening: 1) FAST 2) ACFadj
 % 
 % tcon should already have the intercept
@@ -58,7 +58,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X
     
     disp(['gReMLxACF:: fit voxel-wise prewhitening.'])
     
-    [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,ImgStat,path2mask,badjflag,0,K);
+    [~,~,~,~,~,~,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,ImgStat,path2mask,badjflag,0,K);
   
     
 end
