@@ -92,26 +92,26 @@ end
 CLK	 = fix(clock);
 tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
 mkdir(tmpdir)
-if verbose; disp(['--created: ' tmpdir]); end;
+if verbose; disp(['CleanNIFTI_spm:: --created: ' tmpdir]); end;
 
 if ischar(V0)
         
     [ffpathstr,ffname,ffext]=fileparts(V0);
-    if verbose; disp(['-Path to the image is: ' ffpathstr]); end;
+    if verbose; disp(['CleanNIFTI_spm:: -Path to the image is: ' ffpathstr]); end;
     
     if ~isempty(strfind(ffname,'.dtseries')) || ~isempty(strfind(ffext,'.dtseries'))
-        if verbose; disp(['--File is CIFTI: ' ffname ffext]); end;
-        error('CIFTI not supported yet.')
+        if verbose; disp(['CleanNIFTI_spm:: --File is CIFTI: ' ffname ffext]); end;
+        error('CleanNIFTI_spm:: CIFTI not supported yet.')
 %        error('We can not support CIFTI files yet.')
 %         V1=ft_read_cifti(V0);
 %         V2=V1.dtseries;
 %         I0=size(V2,1); T0=size(V2,2);
 %         Y=V2; clear V2 V1; 
     elseif isempty(strfind(ffname,'.dtseries')) || ~isempty(strfind(ffname,'.nii'))
-        if verbose; disp(['--File is NIFTI: ' ffname ffext]); end;
+        if verbose; disp(['CleanNIFTI_spm:: --File is NIFTI: ' ffname ffext]); end;
         
         if strfind(V0,'.gz')
-            if verbose; disp('- gunzip the image.'); end; 
+            if verbose; disp('CleanNIFTI_spm:: - gunzip the image.'); end; 
             randtempfilename=[tmpdir '/img_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(1000)) '.nii'];
             system(['gunzip -c ' V0 ' > ' randtempfilename]);        
         else
@@ -133,20 +133,20 @@ if ischar(V0)
         elseif ND==4
             T0 = size(V2,4);
         else
-            error('The input should be either 3D or 4D.');
+            error('CleanNIFTI_spm:: The input should be either 3D or 4D.');
         end
         X0 = size(V2,1); Y0 = size(V2,2); Z0 = size(V2,3); 
         
         if sum(ismember(dims,[X0,Y0,Z0,T0]))~=ND
-            error('CleanNIFTI_fsl:: something is wrong with the dimensions!'); 
+            error('CleanNIFTI_spm:: something is wrong with the dimensions!'); 
         end
         
         %figure; imagesc(squeeze(mean(V2(:,25,:,:),4)))
         
         % Guassian Kernel Smoothing 
         if fwhm
-            disp(['-Smooth the image with fwhm: ' num2str(fwhm)])
-            disp(['-- voxel sizes: ' num2str(voxelsize(1)) 'x' num2str(voxelsize(2)) 'x' num2str(voxelsize(3))])
+            disp(['CleanNIFTI_spm:: -Smooth the image with fwhm: ' num2str(fwhm)])
+            disp(['CleanNIFTI_spm:: -- voxel sizes: ' num2str(voxelsize(1)) 'x' num2str(voxelsize(2)) 'x' num2str(voxelsize(3))])
             V2 = GaussianSmooth(V2,fwhm,round(voxelsize));
         end
         
@@ -155,36 +155,36 @@ if ischar(V0)
         I0 = prod([X0,Y0,Z0]);
         Y  = reshape(V2,[I0,T0]); clear V2;
     else
-        error('Unknown input image.')
+        error('CleanNIFTI_spm:: Unknown input image.')
     end
     
-    if verbose; disp('-Image loaded.'); end;
+    if verbose; disp('CleanNIFTI_spm:: -Image loaded.'); end;
     
 elseif isnumeric(V0)
     if numel(size(V0))==2 && ismember(1,size(V0))
-        if verbose; disp('-Input is a 1D Matrix.'); end;
+        if verbose; disp('CleanNIFTI_spm:: -Input is a 1D Matrix.'); end;
         Y = double(V0);  
         I0= numel(Y);
         T0=1;
         ImageType = 1; 
     elseif numel(size(V0))==2 && ~ismember(1,size(V0))
-        if verbose; disp('-Input is a 2D Matrix.'); end;
-        if  size(V0,1)<size(V0,2); error('Matrix should be voxels X time: Transpose the input'); end;
+        if verbose; disp('CleanNIFTI_spm:: -Input is a 2D Matrix.'); end;
+        if  size(V0,1)<size(V0,2); error('CleanNIFTI_spm:: Matrix should be voxels X time: Transpose the input'); end;
         Y = double(V0);  
         I0= size(Y,1); T0 = size(Y,2);
         ImageType = 2;
     elseif numel(size(V0))==3
-         if verbose; disp('-Input is a 2D Matrix.'); end;
-         error('Has not developed anything for this yet!')
+         if verbose; disp('CleanNIFTI_spm:: -Input is a 2D Matrix.'); end;
+         error('CleanNIFTI_spm:: Has not developed anything for this yet!')
          ImageType = 3;
     elseif numel(size(V0))==4
-        disp(['-Input is a 4D matrix.'])
+        disp(['CleanNIFTI_spm:: -Input is a 4D matrix.'])
         X0 = size(V0,1); Y0 = size(V0,2); Z0 = size(V0,3); T0 = size(V0,4);
         I0 = prod([X0,Y0,Z0]);
         Y  = reshape(V0,[I0,T0]);
         ImageType = 4;
     else
-        error('Something does not match with input dimensions.')
+        error('CleanNIFTI_spm:: Something does not match with input dimensions.')
     end
 end
 
@@ -192,9 +192,9 @@ end
 if ~SaveFlag
     
     if ~isempty(Path2Mask)
-        if verbose; disp(['--A mask is being used to extract ''good'' time series.']); end; 
+        if verbose; disp(['CleanNIFTI_spm:: --A mask is being used to extract ''good'' time series.']); end; 
         if strfind(Path2Mask,'.gz')
-            disp('- gunzip the mask.')
+            disp('CleanNIFTI_spm:: - gunzip the mask.')
             randtempfilename4mask=[tmpdir '/mask_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(1000)) '.nii'];
             system(['gunzip -c ' Path2Mask ' > ' randtempfilename4mask]);
         else
@@ -206,9 +206,10 @@ if ~SaveFlag
         mask    = reshape(mask,[1,prod(maskdim)]);
         Removables = find(mask==0);
     elseif isempty(Path2Mask)
-        if verbose; disp(['-Any time series which is either nan or summed zero is removed.']); end
+        if verbose; disp(['-Any time series which is either nan or variance zero is removed.']); end
         nan_idx    = find(isnan(sum(Y,2)));
-        zeros_idx  = find(sum(abs(Y),2) < (eps*10e5) ); %find(sum(Y,2)==0);
+        %zeros_idx  = find(sum(abs(Y),2) < (eps*10e5) ); %find(sum(Y,2)==0);
+        zeros_idx  = find(var(Y,0,2)==0);
         Removables = [nan_idx;zeros_idx];
     end
         
@@ -217,7 +218,7 @@ if ~SaveFlag
     Y(Removables,:) = [];
     I1 = size(Y,1); %update number of voxels
 
-    if verbose; disp(['-Extra-cranial areas removed: ' num2str(size(Y,1)) 'x' num2str(size(Y,2))]); end;
+    if verbose; disp(['CleanNIFTI_spm:: -Extra-cranial areas removed: ' num2str(size(Y,1)) 'x' num2str(size(Y,2))]); end;
     Steps=[Steps 'CLEANED_'];
 
     Stat.GlobalMeanSignal = mean(Y);
@@ -251,7 +252,7 @@ elseif ~isempty(scl) && ~isempty(md)
 elseif isempty(scl) && isempty(md)    
     if verbose; disp('-No normalisation/scaling has been set!'); end;
 else
-    error('Something is wrong with param re: intensity normalisation')
+    error('CleanNIFTI_spm:: Something is wrong with param re: intensity normalisation')
 end
 %------------------------------------------------------------------------
 %Centre the data-----------------------------
@@ -278,7 +279,7 @@ if ~isempty(ImgStat) && isnumeric(V0) && SaveFlag
         Dir2Save = [spathstr '/' sname stext];
     end
     
-    if verbose; disp(['Image saved: ' Dir2Save]); end; 
+    if verbose; disp(['CleanNIFTI_spm:: Image saved: ' Dir2Save]); end; 
     
     X0= ImgStat(1).dim(1); 
     Y0= ImgStat(1).dim(2); 
@@ -287,7 +288,7 @@ if ~isempty(ImgStat) && isnumeric(V0) && SaveFlag
     I00 = prod([X0,Y0,Z0]);
     
     if T0==1 
-        disp('Saved image will be 3D.');
+        disp('CleanNIFTI_spm:: Saved image will be 3D.');
         ImgStat = ImgStat(1); 
     end
     
@@ -304,7 +305,10 @@ if ~isempty(ImgStat) && isnumeric(V0) && SaveFlag
         ImgStat(it).private.dat.fname = Dir2Save;
         spm_write_vol(ImgStat(it),Y_tmp(:,:,:,it));
     end
-    system(['gzip -f ' Dir2Save]);
+    sstmp = system(['gzip -f ' Dir2Save]);
+    if sstmp 
+        error('CleanNIFTI_spm:: Failed to save the file'); 
+    end
     %save_avw(Y_tmp,Dir2Save,datatype,ImgStat.voxelsize);
     clear *_tmp clear V_Img;
 else
@@ -329,7 +333,7 @@ status = system(['rm -r ' tmpdir]);
 if ~status
     if verbose; disp(['--created: ' tmpdir]); end; 
 else
-    disp('--Warning: the temp directory was not deleted.')
+    disp('CleanNIFTI_spm:: Warning: the temp directory was not deleted.')
 end
 
 end
