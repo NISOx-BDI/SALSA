@@ -1,8 +1,13 @@
-function [CPS,stat,CPZ] = CPSUnivar(Resid,X)
-% Resid : resiuldas [Time x Voxel]
-% X     : design [Time x P] OR an integer indicating the DoFs
-% 
+function [CPS,stat,CPZ] = CPSUnivar(Resid,X,ct_sec)
+% Resid  : resiuldas [Time x Voxel] [matrix; float]
+% X      : design [Time x P] OR an integer indicating the DoFs [matrix; float]
+% ct_sec : the cut off frequency in second [integer]
+%
 % TEN & SA, Ox, 2020
+
+if nargin<3; ct_sec = 200; end % I picked 0.0050 from the spectrums we have analysed so far -- especially look how harsh the DCT is.
+
+ct_freq = 1./ct_sec; 
 
 nScan = size(Resid,1);
 
@@ -24,9 +29,10 @@ else
     select   = (2:(nScan-nVar)/2)';
 end
 
-%freq  = (select-1)*2/(nScan-nVar);
-power = [2*Spec(select,:)];
+freq    = (select-1)*2/(nScan-nVar); 
+select  = select(freq>=ct_freq); % don't take into account frequencies below the cutoff. Especially important of DCT.
 
+power = [2*Spec(select,:)];
 
 CPseries = cumsum(power);
 Flength = size(CPseries,1);
