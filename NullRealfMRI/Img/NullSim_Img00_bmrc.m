@@ -32,7 +32,6 @@ disp(['FSLDIR: ' getenv('FSLDIR')])
 disp(['EDtype: ' EDtype])
 disp('=======================================')
 
-#EDtype    = 'ERF'; % boxcar
 
 SaveImagesFlag      = 1; 
 SaveMatFileFlag     = 1; 
@@ -76,6 +75,8 @@ end
 
 path2mask = [Path2ImgDir '/mask.nii.gz']; 
 Path2MC   = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
+
+SEGmaskinEPI = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg.nii.gz'];
 
 disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
@@ -200,34 +201,20 @@ disp('++++++++++++PREWHITEN THE MODEL.')
 disp('++++++++++++++++++++++++++++++++++++')
 MPparamNum = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask,K);
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask,K);
 elseif strcmpi(pwdmethod,'gFAST') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfast(Y,X,TR,glmcont,1);
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gfast(Y,X,TR,glmcont,1);
 elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
-    FeatRepeat = 0;
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,FeatRepeat,K);   
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,0,K);   
 elseif strcmpi(pwdmethod,'ACFadjx2') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%    
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K);   
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K);   
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,0,[]);
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,0,[]);
 elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     error('Use the old script.')
 elseif strcmpi(pwdmethod,'ARMAReML') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     error('Use the old script.')
 end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SPECTRUM OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('++++++++++++++++++++++++++++++++++++')
-disp('++++++++++++Calculate the spectrum of the residuals.')
-disp('++++++++++++++++++++++++++++++++++++')
-
-[dpwRESXp,dpwRESYp]      = DrawMeSpectrum(WRES,TR,0);
-dpwRESYp                 = mean(dpwRESYp,2); % average across voxels
-%clear dpwRES
-[resNaiveSXp,resNaiveYp] = DrawMeSpectrum(RES,TR,0);
-resNaiveYp               = mean(resNaiveYp,2); % average across voxels
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,8 +225,71 @@ disp('++++++++++++Calculate the ACL')
 acl  = ACLImage(RES');
 wacl = ACLImage(WRES');
 
-disp(['mean acl of res: ' num2str(mean(acl)) ])
-disp(['mean acl of w res: ' num2str(mean(wacl)) ])
+disp(['mean acl of res   : ' num2str(mean(acl)) ])
+disp(['mean acl of w res : ' num2str(mean(wacl)) ])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CPS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++++++++++++++++++++++++++')
+disp('++++++++++++Calculate the CPS.')
+disp('++++++++++++++++++++++++++++++++++++')
+
+% CPS on naive
+%BLUSRES   = BLUSres(Y,X,1:size(X,2)); % temp off, too much exec time. 
+[~,~,cpz] = CPSUnivar(RES,stat.df);
+
+%CPS on whitened residuals
+[~,~,wcpz] = CPSUnivar(WRES,stat.df);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SPECTRUM OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++++++++++++++++++++++++++')
+disp('++++++++++++Calculate the spectrum of the residuals.')
+disp('++++++++++++++++++++++++++++++++++++')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Whole brain
+[dpwRESXp,dpwRESYp]             = DrawMeSpectrum(WRES,TR,0);
+dpwRESYp                        = mean(dpwRESYp,2); % average across voxels
+
+% Mask the residuals
+WRES                            = MaskImg(WRES',SEGmaskinEPI,InputImgStat);
+
+% Grey Matter
+[dpwRESXp_GM,dpwRESYp_GM]       = DrawMeSpectrum(WRES{2}',TR,0);
+dpwRESYp_GM                     = mean(dpwRESYp_GM,2); % average across voxels
+
+% White Matter
+[dpwRESXp_WM,dpwRESYp_WM]       = DrawMeSpectrum(WRES{3}',TR,0);
+dpwRESYp_WM                     = mean(dpwRESYp_WM,2); % average across voxels
+
+%CSF
+[dpwRESXp_CSF,dpwRESYp_CSF]     = DrawMeSpectrum(WRES{1}',TR,0);
+dpwRESYp_CSF                    = mean(dpwRESYp_CSF,2); % average across voxels
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%clear dpwRES
+[resNaiveXp,resNaiveYp]        = DrawMeSpectrum(RES,TR,0);
+resNaiveYp                      = mean(resNaiveYp,2); % average across voxels
+
+% Mask the residuals
+RES                             = MaskImg(RES',SEGmaskinEPI,InputImgStat);
+
+% Grey Matter
+[resNaiveXp_GM,resNaiveYp_GM]   = DrawMeSpectrum(RES{2}',TR,0);
+resNaiveYp_GM                   = mean(resNaiveYp_GM,2); % average across voxels
+
+% White Matter
+[resNaiveXp_WM,resNaiveYp_WM]   = DrawMeSpectrum(RES{3}',TR,0);
+resNaiveYp_WM                   = mean(resNaiveYp_WM,2); % average across voxels
+
+%CSF
+[resNaiveXp_CSF,resNaiveYp_CSF] = DrawMeSpectrum(RES{1}',TR,0);
+resNaiveYp_CSF                  = mean(resNaiveYp_CSF,2); % average across voxels
+
+%clear RES
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAVE THE RESULTS AS AN IMAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -251,7 +301,9 @@ disp('++++++++++++++++++++++++++++++++++++')
 if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     VariableList = {'cbhat','se','tv',...
-        'Wcbhat','wse','wtv','acl','wacl'};
+        'Wcbhat','wse','wtv',...
+        'acl','wacl',...
+        'cpz','wcpz'};
     OutputImgStat            = InputImgStat.spmV(1);
     OutputImgStat.Removables = InputImgStat.Removables;
 
@@ -273,10 +325,29 @@ if SaveMatFileFlag
     GLM.EDtype  = EDtype;
     GLM.EDFreq  = BCl; 
     
-    SPEC.X_RES   = resNaiveSXp;
+    % Overal Specturm
+    SPEC.X_RES   = resNaiveXp;
     SPEC.Y_RES   = resNaiveYp;
     SPEC.X_pwRES = dpwRESXp;
     SPEC.Y_pwRES = dpwRESYp;
+    
+    % Spectrum of GM
+    SPEC.X_RES_GM   = resNaiveXp_GM;
+    SPEC.Y_RES_GM   = resNaiveYp_GM;
+    SPEC.X_pwRES_GM = dpwRESXp_GM;
+    SPEC.Y_pwRES_GM = dpwRESYp_GM;
+    
+    % Spectrum of WM
+    SPEC.X_RES_WM   = resNaiveXp_WM;
+    SPEC.Y_RES_WM   = resNaiveYp_WM;
+    SPEC.X_pwRES_WM = dpwRESXp_WM;
+    SPEC.Y_pwRES_WM = dpwRESYp_WM;
+    
+    % Spectrum of CSF
+    SPEC.X_RES_CSF   = resNaiveXp_CSF;
+    SPEC.Y_RES_CSF   = resNaiveYp_CSF;
+    SPEC.X_pwRES_CSF = dpwRESXp_CSF;
+    SPEC.Y_pwRES_CSF = dpwRESYp_CSF;    
     
     PW.dt     = TempTreMethod;
     PW.dtl    = NumTmpTrend;
