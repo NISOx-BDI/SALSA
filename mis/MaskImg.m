@@ -13,7 +13,7 @@ function [S,MaskIdx] = MaskImg(Y,mask,ImgStat)
 % Extract the mask bit, calculates the mask and returns the masked matrix
 %
 % SA, Ox, 2020
-
+verbose = 1; 
 if ischar(Y) && nargin==2
     [Y,ImgStat] = CleanNIFTI_spm(Y,'verbose',0); 
     X0                          = ImgStat.ImgDim(1); 
@@ -33,33 +33,54 @@ elseif isnumeric(Y) && nargin==3
     Y_tmp(img_idx,:)            = Y;
     Y                           = reshape(Y_tmp,[X0 Y0 Z0 T0]); %leave the T0 here, if it is one it is fine in case of 3D images
 else
-    error('SpectrumImage:: Check inputs.')        
+    error('MaskImg:: Check inputs.')        
 end
 
 if ischar(mask)
-    Vmask             = spm_vol(mask);
+    
+    CLK	 = fix(clock);
+    tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
+    mkdir(tmpdir)
+    if verbose; disp(['MaskImg:: --created: ' tmpdir]); end;
+    
+    if verbose; disp('MaskImg:: - gunzip the mask.'); end; 
+    masktmp=[tmpdir '/mask_tmp_' num2str(randi(50)) num2str(CLK(end)+randi(1000)) '.nii'];
+    system(['gunzip -c ' mask ' > ' masktmp]);    
+    
+    Vmask             = spm_vol(masktmp);
     mask              = spm_read_vols(Vmask);
+    
+    
+    status = system(['rm -r ' tmpdir]);
+    if ~status
+        if verbose; disp(['--removed: ' tmpdir]); end; 
+    else
+        disp('MaskImg:: Warning: the temp directory was not deleted.')
+    end    
+    
 else
-    error('SpectrumImage:: mask should be a string; path 2 the mask')
+    error('MaskImg:: mask should be a string; path 2 the mask')
 end
 
 umask                   = unique(mask);
 umask(umask==0)         = []; 
-disp(['The unique values in the mask: ' num2str(numel(umask))]); 
+if verbose; disp(['MaskImg:: The unique values in the mask: ' num2str(numel(umask))]); end; 
+
 
 for m = umask'
-    disp(['extracting: ' num2str(m)])
+    if verbose; disp(['MaskImg:: extracting: ' num2str(m)]); end; 
     tmask                    = mask; 
     tmask(tmask~=m)          = 0;
     tmask(tmask>0)           = 1; % binarise the mask temprorily
-    
+
     tS                       = Y.*tmask; 
     tS                       = reshape(tS,I00,T0);
     tS(ImgStat.Removables,:) = []; 
-
     %sumS                    = round(sum(S,2),5); 
-    sumS                     = round(sum(tS,2).*10e5)./10e5; % Octave round function is dumb
-    tMaskIdx                 =  sumS>0; 
+    %sumS                     = round(sum(tS,2).*10e5)./10e5; % Octave round function is dumb
+    %tMaskIdx                 =  sumS>0; 
+    tVar                     = var(tS,0,2);
+    tMaskIdx                 =  tVar~=0; 
     tS(~tMaskIdx,:)          = [];
     
     S{m}                     = tS;
