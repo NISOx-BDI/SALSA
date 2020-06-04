@@ -45,7 +45,8 @@ end
 % XinvXtX =  X/XtX;
 % M       = eye(N) - XinvXtX*X';
 
-M    = eye(N) - X*inv(X'*X)*X';
+%M    = eye(N) - X*inv(X'*X)*X';
+M    = eye(N) - X*pinv(X);
 S    = eye(N); 
 S    = S(:,I1);
 A    = M*S*sqrtm(inv(S'*M*S));
