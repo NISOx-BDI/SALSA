@@ -49,7 +49,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat
 % ${FSLDIR}/src/feat5/featlib.cc
 %
 % SA, Ox, 2020
-
+    WBLUSRES = []; 
+    
     acfFWHMl   = 5; 
 
     disp('::feat5::')
@@ -102,7 +103,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat
     Wcbhat   = zeros(1,nvox);
     WYhat    = zeros(ntp,nvox); 
     WRES     = zeros(ntp,nvox);
-    WBLUSRES = zeros(ntp,nvox);
+    %WBLUSRES = zeros(ntp,nvox);
     wse      = zeros(nvox,1); 
     wtv      = zeros(nvox,1);
     wzv      = zeros(nvox,1);
@@ -120,8 +121,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat
         wtv(iv)  = wstat.tval;
         wzv(iv)  = wstat.zval;    
         
-        % BLUSres
-        WBLUSRES(:,iv) = BLUSres(WY(:,iv),WX,1:size(WX,2));
+        % BLUSres -- this will take ages. 
+        %WBLUSRES(:,iv) = BLUSres(WY(:,iv),WX,(P+1):T);
     end
     %----------------------------------------------------------------------
     

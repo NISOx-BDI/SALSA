@@ -59,7 +59,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv,W,V,Cy]
 %
 % SA & TEN, Ox, 2020
 %
-
+    WBLUSRES = []; 
+    
     if nargin<5; pmethod = 0; end; 
 
     ntp   = size(X,1); 
@@ -149,7 +150,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv,W,V,Cy]
     wtv  = wstat.tval;
     wzv  = wstat.zval;
     
-    %BLUSres
-    WBLUSRES(:,iv) = BLUSres(WY,WX,1:size(WX,2));
+    %BLUSres this will be taking ages so we drop it for now. 
+    %WBLUSRES(:,iv) = BLUSres(WY,WX,1:size(WX,2));
         
 end

@@ -37,7 +37,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,ARO,ImgStat,path2mask,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = arw(Y,X,tcon,ARO,ImgStat,path2mask,K)
 % Y    : TxV
 % X    : TxEV. X should have the detreding basis + motion parameters
 % tcon : 1xEV
@@ -45,6 +45,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,
 %
 % SA, Ox, 2020
 
+    WBLUSRES = []; 
+    
     warning('off','all')
 
     disp('::arw::')
@@ -84,7 +86,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,
     Wcbhat   = zeros(1,nvox);
     WYhat    = zeros(ntp,nvox); 
     WRES     = zeros(ntp,nvox);
-    WBLUSRES = zeros(ntp,nvox);
+    %WBLUSRES = zeros(ntp,nvox);
     wse      = zeros(nvox,1); 
     wtv      = zeros(nvox,1);
     wzv      = zeros(nvox,1);
@@ -100,8 +102,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw(Y,X,tcon,
         wzv(iv)  = wstat.zval;
         %WY(:,iv)   = WYv;
         
-        % BLUSres
-        WBLUSRES(:,iv)                            = BLUSres(WYv,WX,1:size(WX,2));        
+        % BLUSres -- this will take ages. 
+        % WBLUSRES(:,iv)                            = BLUSres(WYv,WX,1:size(WX,2));        
     end
 
 end
