@@ -118,12 +118,16 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod)
 
     ResSS = sum(RES.^2); 
 
+    % Using chunks is kinda redundent in matlab because of broadcasting. 
+    % But, it is better to keep it this way in case we wanted to implement
+    % this later in C++ OR python. 
+    % 
     chunksize = 2000; % this is reasonable, but should be lower if low memory
     nbchunks  = ceil(q/chunksize);
     chunks    = min(cumsum([1 repmat(chunksize,1,nbchunks)]),q+1);
 
     Cy = 0; 
-    for ichunk = 1:nbchunks
+    for ichunk = 1:nbchunks 
         disp(['gReML:: chunk ' num2str(ichunk) '/' num2str(nbchunks)])
         chunk  = chunks(ichunk):chunks(ichunk+1)-1;
         jchunk = jidx(chunk);  
@@ -136,8 +140,10 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod)
 
     clear Yc v 
 
-    % FAST variance components for FAST
-    Vi      = spm_Ce('fast',ntp,TR);
+    % Error variance components for FAST
+    J        = 0; % Keep the basis limited to AR(1)
+    Vi       = CovFast(ntp,TR,J);
+    %Vi      = spm_Ce('fast',ntp,TR);
 
     % Call ReML to get the auto-covariance of the system
     disp('gReML:: Finding autocovariance matrix using ReML')
@@ -155,3 +161,27 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod)
     WX = W*X(:,2:end); %exclude the intercept while prewhitening
     WX = [ones(ntp,1), WX];
 end
+
+
+
+function C = CovFast(ntp,TR,J)
+% A version of spm_Ce.m with 'fast' option but with control over the basis
+% ntp: # data points [integer]
+% TR : repetion time [float]
+% J  : # of basis beyond AR(1) [integer]
+% 
+% SA, Ox, 2020
+if nargin<3; J = 2; end; % if not specified, do what spm_Ce.m does
+    C  = {};
+    T     = (0:(ntp - 1))*TR;
+    d     = 2.^(floor(log2(TR/4)):log2(64));
+    for i = 1:min(6,length(d))
+        for j = 0:J
+            QQ = toeplitz((T.^j).*exp(-T/d(i)));
+            [x,y,q] = find(QQ);
+            C{end + 1} = sparse(x,y,q,ntp,ntp);
+        end
+    end
+
+end
+
