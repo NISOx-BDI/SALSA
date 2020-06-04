@@ -169,7 +169,7 @@ function C = CovFast(ntp,TR,J)
 % ntp: # data points [integer]
 % TR : repetion time [float]
 % J  : # of basis beyond AR(1) [integer]
-% 
+% NB! The function can't deal with multiple sessions.
 % SA, Ox, 2020
 if nargin<3; J = 2; end; % if not specified, do what spm_Ce.m does
     C  = {};
