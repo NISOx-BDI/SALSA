@@ -7,7 +7,7 @@ function [cbhat,Yhat,RES,stat] = myOLS(Y,X,contrast)
     %
     verbose = 0;
     
-    if size(Y,1)~=size(X,1); error('myOLS:: check the inputs!'); end; 
+    if size(Y,1)~=size(X,1); error('myOLS:: check the inputs, the number of rows in Y and X doesn''t match.'); end; 
     if size(X,1)<size(X,2); error('myOLS:: The model is not stable.'); end; 
     
     
