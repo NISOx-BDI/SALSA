@@ -88,7 +88,11 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat
     acf_tukey   = acf_prep(RES,tukey_m,ResidFormingMat,K);
 
     % smooth ACF
-    acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
+    if ~isempty(path2mask)
+        acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
+    else
+        disp('No smoothing is done on the ACF.')
+    end
     % make the pwfilter
     W_fft       = establish_pwfilter(acf_tukey,ntp);
 
