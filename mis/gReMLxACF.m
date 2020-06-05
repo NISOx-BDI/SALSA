@@ -38,7 +38,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,ImgStat,path2mask,badjflag,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,ImgStat,path2mask,badjflag,K,WMSeg)
 % Performs two stage prewhitening: 1) FAST 2) ACFadj
 % 
 % tcon should already have the intercept
@@ -52,15 +52,57 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
     tv                 = stat.tval;
     zv                 = stat.zval;
 
-    disp(['gReMLxACF:: fit gloabl FAST.'])
-    
-    [WY,WX]            = gReML(Y,X,TR,tcon,0); 
-    
-    disp(['gReMLxACF:: fit voxel-wise prewhitening.'])
-    
-    [~,~,~,~,~,~,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,ImgStat,path2mask,badjflag,0,K);
-  
-    
+    if ~exist('WMSeg','var')
+        disp(['gReMLxACF:: fit gloabl FAST.'])
+        [WY,WX]            = gReML(Y,X,TR,tcon,0); 
+        clear X Y
+        disp(['gReMLxACF:: fit voxel-wise prewhitening.'])
+        [~,~,~,~,~,~,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,ImgStat,path2mask,badjflag,0,K);
+    else exist('WMSeg','var')
+        disp('gReMLxACF:: prewhitening is being done on segemnts differently.')
+        disp('gReMLxACF:: No ACF smoothing will be done.')
+        
+        [ntp,nvox]       = size(Y);
+        [~,Idx_wm]       = MaskImg(Y',WMSeg,ImgStat); % Time series in WM 
+        Idx_wm           = Idx_wm{1};
+        
+        Ywm              = Y(:,Idx_wm); 
+        Idx_gm           = ~Idx_wm;
+        Ygm              = Y(:,Idx_gm); % time series in GM & CSF
+        
+        disp(['gReMLxACF:: total # of voxels: ' num2str(nvox)])
+        disp(['gReMLxACF:: # of GM voxels: ' num2str(sum(Idx_gm)) ', # of WM voxels: ' num2str(sum(Idx_wm))])
+        
+        disp('gReMLxACF:: apply gFAST on grey matter')
+        [WYgm,WXgm]       = gReML(Ygm,X,TR,tcon,0);
+        
+        disp('gReMLxACF:: apply feat5 on the grey matter & CSF')
+        [~,~,~,~,~,~,Wcbhat_gm,WYhat_gm,WRES_gm,WBLUSRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,ImgStat,[],badjflag,0,K);
+        
+        disp('gReMLxACF:: apply feat5 on the white matter.')
+        [~,~,~,~,~,~,Wcbhat_wm,WYhat_wm,WRES_wm,WBLUSRES_wm,wse_wm,wtv_wm,wzv_wm] = feat5(Ywm,X,tcon,tukey_m,ImgStat,[],badjflag,0,K);
+        size(WYhat_gm), size(WYhat_wm)
+        
+        % put back the results together.
+        Wcbhat = zeros(nvox,1);
+        WYhat  = zeros(ntp,nvox);
+        WRES   = zeros(ntp,nvox);
+        WBLUSRES = [];
+        wse    = zeros(nvox,1);
+        wtv    = zeros(nvox,1);
+        wzv    = zeros(nvox,1);
+        
+        % put them back together
+        wse(Idx_wm)    = wse_wm ;    wse(Idx_gm)     = wse_gm;
+        wtv(Idx_wm)    = wtv_wm ;    wtv(Idx_gm)     = wtv_gm; 
+        wzv(Idx_wm)    = wzv_wm ;    wzv(Idx_gm)     = wzv_gm;
+        Wcbhat(Idx_wm) = Wcbhat_wm ; Wcbhat(Idx_gm)  = Wcbhat_gm;
+        
+        WYhat(:,Idx_wm) = WYhat_wm ; WYhat(:,Idx_gm) = WYhat_gm ;
+        WRES(:,Idx_wm)  = WRES_wm  ; WRES(:,Idx_gm)  = WRES_gm ;
+        
+    end
+      
 end
 
 
