@@ -153,6 +153,9 @@ function acf_tukey = acf_prep(RES,tukey_m,ResidFormingMat,K)
         acftmp     = acv./acv(1,:);         
         where2stop = FindBreakPoint(acftmp,ntp);
         
+        disp('# of voxel with flat acf.')
+        sum(where2stop==1)
+        
         if tukey_m == -1
             
             lp  = 25; 

@@ -219,6 +219,9 @@ elseif strcmpi(pwdmethod,'gFASTxACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K);
 elseif strcmpi(pwdmethod,'gFASTxACFadj2t') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K,WMseg);    
+elseif strcmpi(pwdmethod,'gFASTxACFadj2t2j') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
+    J = 2; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K,WMseg,J);        
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,0,[]);
 elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,6 +243,13 @@ wacl = ACLImage(WRES');
 
 disp(['mean acl of res   : ' num2str(mean(acl)) ])
 disp(['mean acl of w res : ' num2str(mean(wacl)) ])
+
+disp('+++++++++++Calculate AR1')
+ar1  = AR_YW_voxel(RES,T,1);
+war1 = AR_YW_voxel(WRES,T,1);
+
+disp(['mean ar1 of res   : ' num2str(mean(ar1)) ])
+disp(['mean ar1 of w res : ' num2str(mean(war1)) ])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CPS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -316,7 +326,8 @@ if SaveImagesFlag
     VariableList = {'cbhat','se','tv',...
         'Wcbhat','wse','wtv',...
         'acl','wacl',...
-        'cpz','wcpz'};
+        'cpz','wcpz',...
+        'ar1','war1'};
     OutputImgStat            = InputImgStat.spmV(1);
     OutputImgStat.Removables = InputImgStat.Removables;
 

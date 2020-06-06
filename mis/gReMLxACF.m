@@ -38,13 +38,14 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,ImgStat,path2mask,badjflag,K,WMSeg)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,ImgStat,path2mask,badjflag,K,WMSeg,J)
 % Performs two stage prewhitening: 1) FAST 2) ACFadj
 % 
 % tcon should already have the intercept
 % badjflag [boolean]
 % K is the filter
 % 
+    if ~exist('J','var') || isempty(J) ; J = 0; end; 
     disp(['gReMLxACF:: fit the intial naive model.'])
     % This bit naturally comes out of the gReML. But keep it here for now. 
     [cbhat,~,RES,stat] = myOLS(Y,X,tcon);
@@ -54,7 +55,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
 
     if ~exist('WMSeg','var')
         disp(['gReMLxACF:: fit gloabl FAST.'])
-        [WY,WX]            = gReML(Y,X,TR,tcon,0); 
+        [WY,WX]                                              = gReML(Y,X,TR,tcon,0); 
         clear X Y
         disp(['gReMLxACF:: fit voxel-wise prewhitening.'])
         [~,~,~,~,~,~,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,ImgStat,path2mask,badjflag,0,K);
@@ -74,10 +75,10 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
         disp(['gReMLxACF:: # of GM voxels: ' num2str(sum(Idx_gm)) ', # of WM voxels: ' num2str(sum(Idx_wm))])
         
         disp('gReMLxACF:: apply gFAST on grey matter')
-        [WYgm,WXgm]       = gReML(Ygm,X,TR,tcon,0);
+        [WYgm,WXgm]       = gReML(Ygm,X,TR,tcon,0,J);
         
         disp('gReMLxACF:: apply feat5 on the grey matter & CSF')
-        [~,~,~,~,~,~,Wcbhat_gm,WYhat_gm,WRES_gm,WBLUSRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,ImgStat,[],badjflag,0,K);
+        [~,~,~,~,~,~,Wcbhat_gm,WYhat_gm,WRES_gm,WBLUSRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,ImgStat,[],badjflag,0,[]);
         
         disp('gReMLxACF:: apply feat5 on the white matter.')
         [~,~,~,~,~,~,Wcbhat_wm,WYhat_wm,WRES_wm,WBLUSRES_wm,wse_wm,wtv_wm,wzv_wm] = feat5(Ywm,X,tcon,tukey_m,ImgStat,[],badjflag,0,K);
@@ -106,7 +107,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
 end
 
 
-function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod)
+function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod,J)
 %[W,V,Cy] = gReML(Y,X,TR)
 % This is a ligher version of gfast.m
 % 
@@ -126,8 +127,9 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod)
 % SA & TEN, Ox, 2020
 %
 
-    if nargin<5; pmethod = 0; end; 
-
+    if ~exist('pmethod','var') || isempty(pmethod) ; pmethod = 0; end; 
+    if ~exist('J','var') || isempty(J) ; J = 0; end; 
+        
     ntp   = size(X,1); 
     nvox  = size(Y,2); 
 
@@ -143,7 +145,7 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod)
     %%% ---------------------pooling by ACL/ACF
         disp(['gReML:: pooling by autocorrelation.'])
         [acf ,acfCI] = AC_fft(RES,ntp);
-        %acl          = sum(acf(1,1:fix(ntp/4)).^2); % Anderson's suugestion of ignoring beyond ntps/4
+        %acl         = sum(acf(1,1:fix(ntp/4)).^2); % Anderson's suugestion of ignoring beyond ntps/4
         acf          = acf(:,1+1); %acf(1) 
         jidx         = find(abs(acf)>acfCI(2));  % only if a voxel exceeds the CI
         
@@ -183,7 +185,7 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod)
     clear Yc v 
 
     % Error variance components for FAST
-    J        = 0; % Keep the basis limited to AR(1)
+    J        = 2; % Keep the basis limited to AR(1)
     Vi       = CovFast(ntp,TR,J);
     %Vi      = spm_Ce('fast',ntp,TR);
 
