@@ -73,10 +73,11 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = arw(
     dRESacov            = dRESacov(1:ARO+1,:); %cut-off here so smoothing gets much faster
     
     % smooth ACF
-    acfFWHMl               = 5; 
-    dRESacov            = ApplyFSLSmoothing(dRESacov',acfFWHMl,ImgStat,path2mask)';
-    disp(['arw:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(ARO) ' lag.'])
-    
+    if ~isempty(path2mask)
+        acfFWHMl               = 5; 
+        dRESacov            = ApplyFSLSmoothing(dRESacov',acfFWHMl,ImgStat,path2mask)';
+        disp(['arw:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(ARO) ' lag.'])
+    end
     % bias adjusting matrix + filter K 
     BiasAdj             = ACFBiasAdjMat(ResidFormingMat*K,ntp,ARO); 
 
@@ -129,24 +130,38 @@ function [sqrtmVhalf,posdef] = establish_prewhiten_matrix(autocov,ntp,BiasAdj)
     
 end
 
-function invM_biasred = ACFBiasAdjMat(ResidFormingMat,ntp,ARO)
+function invM_biasred = ACFBiasAdjMat(R,ntp,ARO)
 % Bias adjustment for ACF of residuals. 
 % 
 % This is a bit tricky here. Note that ResidFormingMat is symmetric. 
-% So, ResidFormingMat*Di*ResidFormingMat'*Dj == ResidFormingMat*Di*ResidFormingMat'*Dj
-% And therefore, we can have ResidFormingMat = ResidFormingMat*K; if we
-% wanted to inject the K filter into the R. 
+% So, R'*Di*R*Dj == R'*Di*R*Dj
+% And therefore, we can have R = R*K; if we wanted to inject the K filter into the R. 
 % 
-% Also, note that this is different from Appendix A, Worsely 2002. In terms
+% SA, Ox, 2020
+
+% fmristat implementation ------------------------------------------------
 % of implementation. 
+%     M_biasred   = zeros(ARO+1);
+%     for i=1:(ARO+1)
+%         Di                  = (diag(ones(1,ntp-i+1),i-1)+diag(ones(1,ntp-i+1),-i+1))/(1+(i==1));
+%         for j=1:(ARO+1)
+%            Dj               = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
+%            M_biasred(i,j)   = trace(ResidFormingMat'*Di*ResidFormingMat*Dj)/(1+(i>1));
+%         end
+%     end
+%     invM_biasred = inv(M_biasred);
+% ------------------------------------------------------------------------
+
+% Appendix A & then mofidied for K from the MS Notes ---------------------
     M_biasred   = zeros(ARO+1);
-    for i=1:(ARO+1)
-        Di                  = (diag(ones(1,ntp-i+1),i-1)+diag(ones(1,ntp-i+1),-i+1))/(1+(i==1));
-        for j=1:(ARO+1)
-           Dj               = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
-           M_biasred(i,j)   = trace(ResidFormingMat*Di*ResidFormingMat'*Dj)/(1+(i>1));
+    for l = 1:(ARO+1)
+        Dl = diag(ones(1,ntp-l+1),l-1); % upper triangle
+        for j = 1:(ARO+1)
+           DjDjt            = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
+           M_biasred(l,j)   = trace(R'*Dl*R*DjDjt);
         end
     end
     invM_biasred = inv(M_biasred);
+% ------------------------------------------------------------------------
     
 end
