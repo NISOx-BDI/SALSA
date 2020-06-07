@@ -84,11 +84,12 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat
     % calc acf & tukey taper it
     if isempty(tukey_m); tukey_m = round(sqrt(ntp)); end
     
-    disp(['feat5:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+    
     acf_tukey   = acf_prep(RES,tukey_m,ResidFormingMat,K);
 
     % smooth ACF
     if ~isempty(path2mask)
+        disp(['feat5:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
         acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
     else
         disp('No smoothing is done on the ACF.')
