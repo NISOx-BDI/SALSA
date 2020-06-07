@@ -55,7 +55,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
 
     if ~exist('WMSeg','var')
         disp(['gReMLxACF:: fit gloabl FAST.'])
-        [WY,WX]                                              = gReML(Y,X,TR,tcon,0); 
+        [WY,WX]           = gReML(Y,X,TR,tcon,0); 
         clear X Y
         disp(['gReMLxACF:: fit voxel-wise prewhitening.'])
         [~,~,~,~,~,~,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,ImgStat,path2mask,badjflag,0,K);
@@ -75,7 +75,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
         disp(['gReMLxACF:: # of GM voxels: ' num2str(sum(Idx_gm)) ', # of WM voxels: ' num2str(sum(Idx_wm))])
         
         disp('gReMLxACF:: apply gFAST on grey matter')
-        [WYgm,WXgm]       = gReML(Ygm,X,TR,tcon,0,J);
+        [WYgm,WXgm]       = gReML(Ygm,X,TR,tcon,[],J);
         
         disp('gReMLxACF:: apply feat5 on the grey matter & CSF')
         [~,~,~,~,~,~,Wcbhat_gm,WYhat_gm,WRES_gm,WBLUSRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,ImgStat,[],badjflag,0,[]);
@@ -136,20 +136,24 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod,J)
     [~,~,RES,stat] = myOLS(Y,X,tcon); % to get pvalues for Fstats of overall sig.
     trRV           = stat.df; 
         
-    if pmethod
+    if pmethod==1
     %%% --------------------- pooling by F-statistics
         disp(['gReML:: pooling by F-statistics.'])
         jidx  = find((stat.fp.*nvox)<0.001); % Harsh bonferroni 
         clear stat
-    else
+    elseif pmethod==0
     %%% ---------------------pooling by ACL/ACF
         disp(['gReML:: pooling by autocorrelation.'])
         [acf ,acfCI] = AC_fft(RES,ntp);
         %acl         = sum(acf(1,1:fix(ntp/4)).^2); % Anderson's suugestion of ignoring beyond ntps/4
         acf          = acf(:,1+1); %acf(1) 
         jidx         = find(abs(acf)>acfCI(2));  % only if a voxel exceeds the CI
-        
         clear acf
+    elseif pmethod==-1
+         disp(['gReML:: pooling amongst largest autocorrelation length.'])
+        acf         = AC_fft(RES,ntp);
+        acl         = sum(acf(:,1:fix(ntp/4)).^2,2); % Anderson's suugestion of ignoring beyond ntps/4
+        jidx        = find(acl>prctile(acl,75));
     end
     
     q = numel(jidx); 
