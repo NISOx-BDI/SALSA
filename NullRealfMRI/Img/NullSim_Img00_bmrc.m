@@ -52,8 +52,12 @@ disp('=====SET UP PATHS =============================')
 Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
 if strcmpi(COHORT,'ROCKLAND')
     Path2ImgDir = [Path2ImgRaw '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
+    SEGmaskinEPI = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg.nii.gz'];
+    WMseg        = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg_2.nii.gz'];
 elseif any(strcmpi(COHORT,{'Beijing','Cambridge'}))
-    Path2ImgDir = [Path2ImgRaw '/rest_mpp'];
+    Path2ImgDir  = [Path2ImgRaw '/rest_mpp'];
+    SEGmaskinEPI = [Path2ImgDir '/seg/mprage_T1_func_seg.nii.gz'];
+    WMseg        = [Path2ImgDir '/seg/mprage_T1_func_seg_2.nii.gz'];
 end
 
 
@@ -75,9 +79,6 @@ end
 
 path2mask = [Path2ImgDir '/mask.nii.gz']; 
 Path2MC   = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
-
-SEGmaskinEPI = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg.nii.gz'];
-WMseg        = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg_2.nii.gz'];
 
 disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
