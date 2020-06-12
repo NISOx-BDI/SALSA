@@ -1,43 +1,43 @@
-% ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
-% tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
-% dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
-% path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
-% parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
-% %feat5/featlib.cc 
-% 
-% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
-% addpath('/Users/sorooshafyouni/Home/matlab/spm12')
-% 
-% [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
-% Y = Y';
-% Y = Y - mean(Y);
-% T=900;
-% 
-% disp('MC params.')
-% MCp      = load(parmat); 
-% MCp      = GenMotionParam(MCp,24); 
-% X        = [load(dmat_fname) MCp];
-% 
-% disp('hpf')
-% K = hp_fsl(size(Y,1),100,0.645);    
-% X     = K*X;    % high pass filter the design
-% Y     = K*Y;  % high pass filter the data
-% 
-% X = [ones(T,1) X];
-% tcon     = zeros(1,size(X,2));
-% tcon(2)  = 1;
-% 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw5(Y,X,tcon,20,ImgStat,path2mask,[]);
-% 
-% [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
-% [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
-% 
-% figure; hold on; grid on; 
-% plot(PSDx,mean(PSDy,2))
-% plot(WPSDx,mean(WPSDy,2))
+ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
+tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
+dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
+path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
+parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+%feat5/featlib.cc 
+
+addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
+addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+
+[Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
+Y = Y';
+Y = Y - mean(Y);
+T=900;
+
+disp('MC params.')
+MCp      = load(parmat); 
+MCp      = GenMotionParam(MCp,24); 
+X        = [load(dmat_fname) MCp];
+
+disp('hpf')
+K = hp_fsl(size(Y,1),100,0.645);    
+X     = K*X;    % high pass filter the design
+Y     = K*Y;  % high pass filter the data
+
+X = [ones(T,1) X];
+tcon     = zeros(1,size(X,2));
+tcon(2)  = 1;
+
+[cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw5(Y,X,tcon,20,ImgStat,path2mask,[]);
+
+[PSDx,PSDy]   = DrawMeSpectrum(RES,1);
+[WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
+
+figure; hold on; grid on; 
+plot(PSDx,mean(PSDy,2))
+plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = arw(Y,X,tcon,ARO,ImgStat,path2mask,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = arw5(Y,X,tcon,ARO,ImgStat,path2mask,K)
 % Y    : TxV
 % X    : TxEV. X should have the detreding basis + motion parameters
 % tcon : 1xEV
@@ -121,11 +121,11 @@ function [sqrtmVhalf,posdef] = establish_prewhiten_matrix(autocov,ntp,BiasAdj)
     dRESac_adj              = BiasAdj*autocov;
     dRESac_adj              = dRESac_adj./dRESac_adj(1); % make a auto*correlation*
     
-    [Ainvt,posdef]          = chol(toeplitz(dRESac_adj)); 
+    [Ainvt,posdef]          = chol(toep(dRESac_adj)); 
     p1                      = size(Ainvt,1); % this is basically posdef - 1, but we'll keep it as Keith Worsely's code. 
     A                       = inv(Ainvt'); 
     
-    sqrtmVhalf              = toeplitz([A(p1,p1:-1:1) zeros(1,ntp-p1)],zeros(1,ntp)); 
+    sqrtmVhalf              = toep([A(p1,p1:-1:1) zeros(1,ntp-p1)],zeros(1,ntp)); 
     sqrtmVhalf(1:p1,1:p1)   = A;
     
 end
@@ -165,3 +165,23 @@ function invM_biasred = ACFBiasAdjMat(R,ntp,ARO)
 % ------------------------------------------------------------------------
     
 end
+
+ function t = toep(c,r)
+    % quick toeplitz to get rid of the checks and warnings
+    %Toeplitz matrix.
+    if nargin < 2
+        c(1) = conj(c(1));                    % set up for Hermitian Toeplitz
+        r = c; 
+        c = conj(c); 
+    end
+    r = r(:);                               % force column structure
+    c = c(:);
+    p = length(r);
+    m = length(c);
+    x = [r(p:-1:2, 1) ; c];                 % build vector of user data
+    ij = (0:m-1)' + (p:-1:1);               % Toeplitz subscripts
+    t = x(ij);                              % actual data
+    if isrow(ij)                            % preserve shape for a single row
+        t = t.';
+    end
+ end
