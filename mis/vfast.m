@@ -78,7 +78,10 @@ a               = autocovs(:,1:ARO+1)';
 
 % matrix of basis
 disp(['vfast:: getting matrix of AR basis.'])
-B               = ACFbasis(ARO,TR); 
+Bfull           = ACFbasis(ntp-1,TR); 
+MaxLag          = ARO+1;  % I don't like calling this ARO, but, whatever we call it
+                          % it is the key free parameter
+B               = Bfull(1:MaxLag,:);
 
 % matrix of M
 disp(['vfast:: adjusting the autocovariances.'])
@@ -116,10 +119,10 @@ for iv = 1:nvox
     wzv(iv)  = wstat.zval;
 end
 
- function B = ACFbasis(ARO,TR)
+ function B = ACFbasis(MaxLag,TR)
  % matrix of Mxlag x basis
  % TEN, 2020
-    t = [(0:ARO)*TR]';
+    t = [(0:MaxLag)*TR]';
     d = 2.^(floor(log2(TR/4)):log2(64));
     d(7:end) = [];
     j = [0 1];%[0 1]; % or	[0 1 2], but I don't think j=2 buys us much
