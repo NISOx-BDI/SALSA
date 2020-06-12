@@ -78,7 +78,7 @@ a               = autocovs(:,1:ARO+1)';
 
 % matrix of basis
 disp(['vfast:: getting matrix of AR basis.'])
-B               = ARBasis(ARO,TR); 
+B               = ACFbasis(ARO,TR); 
 
 % matrix of M
 disp(['vfast:: adjusting the autocovariances.'])
@@ -116,7 +116,7 @@ for iv = 1:nvox
     wzv(iv)  = wstat.zval;
 end
 
- function B = ARBasis(ARO,TR)
+ function B = ACFbasis(ARO,TR)
  % matrix of Mxlag x basis
  % TEN, 2020
     t = [(0:ARO)*TR]';
