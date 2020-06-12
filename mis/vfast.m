@@ -55,15 +55,18 @@
 % plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast(Y,X,TR,tcon,aclagest,aclageval)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast(Y,X,TR,tcon,aclagest,aclageval,K)
 
+[ntp,nvox]      = size(Y);
 
-if ~exist('aclageval','var'); aclageval = aclagest.^2; end; 
+if ~exist('aclageval','var') || isempty(aclageval); aclageval = aclagest.^2; end; 
+
+if ~exist('K','var')  || isempty(K)
+    K = eye(ntp);   
+end;    
 
 disp(['vfast:: #lags used to estimate acf: ' num2str(aclagest)])
 disp(['vfast:: #lags used to adjust acf:   ' num2str(aclageval)])
-
-[ntp,nvox]      = size(Y);
 
 % Only once for a brain-----------------------
 disp(['vfast:: getting residuals.'])
@@ -88,7 +91,7 @@ Beval          = Bfull(1:aclageval+1,:);
 
 % matrix of M
 disp(['vfast:: Autocovariance adjustment matrix.'])
-M              = BiasAdjMat(R,ntp,aclageval); % ntp-1 is not really feasible
+M              = BiasAdjMat(R*K,ntp,aclageval); % ntp-1 is not really feasible
 
 disp(['vfast:: getting FAST basis coefficients.'])
 g              = (M*Beval)\a;
