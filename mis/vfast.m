@@ -85,11 +85,13 @@ B               = Bfull(1:MaxLag,:);
 
 % matrix of M
 disp(['vfast:: Autocovariance adjustment matrix.'])
-M               = BiasAdjMat(R,ntp,ARO);
+M               = BiasAdjMat(R,ntp,ntp-1);
 
 disp(['vfast:: getting FAST basis coefficients.'])
 g              = (M*B)\a;
-g              = g./g(1,:); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
+vfull          = Mfull*g;
+v              = M*g;
+v              = v./v(1,;); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
 
 % Pervoxel -----------------------------------
 % 
