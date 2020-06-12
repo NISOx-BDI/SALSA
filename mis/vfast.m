@@ -59,7 +59,7 @@ plot(WPSDx,mean(WPSDy,2))
 function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast5(Y,X,TR,tcon,ARO)
 
 
-[ntp,nvox]  = size(Y);
+[ntp,nvox]      = size(Y);
 
 % Only once for a brain-----------------------
 disp(['vfast:: getting residuals.'])
@@ -72,21 +72,21 @@ se                = stat.se;
 tv                = stat.tval;
 zv                = stat.zval;
 % Get the autocovariances
-disp(['vfast:: getting autocorrelations.'])
+disp(['vfast:: getting autocovariances.'])
 [~,~,autocovs]  = AC_fft(RES,ntp);
 a               = autocovs(:,1:ARO+1)';
+
 % matrix of basis
 disp(['vfast:: getting matrix of AR basis.'])
-B               = ARBasis(20,TR); 
-%subplot(2,1,1);plot(t,B)
+B               = ARBasis(ARO,TR); 
+
 % matrix of M
 disp(['vfast:: adjusting the autocovariances.'])
 M               = BiasAdjMat(R,ntp,ARO);
 
 disp(['vfast:: getting FAST basis coefficients.'])
-MB              = M*B; 
-gg              = MB\a;
-g               = gg./gg(1,:); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
+g              = (M*B)\a;
+g              = g./g(1,:); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
 
 % Pervoxel -----------------------------------
 % 
@@ -118,11 +118,11 @@ end
 
  function B = ARBasis(ARO,TR)
  % matrix of Mxlag x basis
- % 
+ % TEN, 2020
     t = [(0:ARO)*TR]';
     d = 2.^(floor(log2(TR/4)):log2(64));
     d(7:end) = [];
-    j = [0 1]; % or	[0 1 2], but I don't think j=2 buys us much
+    j = [0 1];%[0 1]; % or	[0 1 2], but I don't think j=2 buys us much
     J = repmat(j,length(t),length(d));
     T = repmat(t,1,length(j)*length(d));
     D = repmat(repelem(d,length(j)),length(t),1);
@@ -143,29 +143,15 @@ end
 % 
 % SA, Ox, 2020
 
-% fmristat implementation ------------------------------------------------
-% of implementation. 
-%     M_biasred   = zeros(ARO+1);
-%     for i=1:(ARO+1)
-%         Di                  = (diag(ones(1,ntp-i+1),i-1)+diag(ones(1,ntp-i+1),-i+1))/(1+(i==1));
-%         for j=1:(ARO+1)
-%            Dj               = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
-%            M_biasred(i,j)   = trace(ResidFormingMat'*Di*ResidFormingMat*Dj)/(1+(i>1));
-%         end
-%     end
-%     invM_biasred = inv(M_biasred);
-% ------------------------------------------------------------------------
-
 % Appendix A & then mofidied for K from the MS Notes ---------------------
-    M_biasred   = zeros(ARO+1);
+    M   = zeros(ARO+1);
     for l = 1:(ARO+1)
         Dl = diag(ones(1,ntp-l+1),l-1); % upper triangle
         for j = 1:(ARO+1)
-           DjDjt            = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
-           M_biasred(l,j)   = trace(R'*Dl*R*DjDjt);
+           DjDjt    = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
+           M(l,j)   = trace(R'*Dl*R*DjDjt);
         end
     end
-    M = inv(M_biasred);
 % ------------------------------------------------------------------------
 
  end
