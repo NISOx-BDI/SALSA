@@ -84,7 +84,7 @@ MaxLag          = ARO+1;  % I don't like calling this ARO, but, whatever we call
 B               = Bfull(1:MaxLag,:);
 
 % matrix of M
-disp(['vfast:: adjusting the autocovariances.'])
+disp(['vfast:: Autocovariance adjustment matrix.'])
 M               = BiasAdjMat(R,ntp,ARO);
 
 disp(['vfast:: getting FAST basis coefficients.'])
