@@ -89,7 +89,7 @@ M               = BiasAdjMat(R,ntp,ntp-1);
 
 disp(['vfast:: getting FAST basis coefficients.'])
 g              = (M*B)\a;
-vfull          = Mfull*g;
+vfull          = Bfull*g;
 v              = M*g;
 v              = v./v(1,;); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
 
