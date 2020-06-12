@@ -78,15 +78,20 @@ a               = autocovs(:,1:ARO+1)';
 
 % matrix of basis
 disp(['vfast:: getting matrix of AR basis.'])
-B               = ARBasis(ARO,TR); 
+Bfull           = ACFbasis(ntp-1,TR); 
+MaxLag          = ARO+1;  % I don't like calling this ARO, but, whatever we call it
+                          % it is the key free parameter
+B               = Bfull(1:MaxLag,:);
 
 % matrix of M
-disp(['vfast:: adjusting the autocovariances.'])
-M               = BiasAdjMat(R,ntp,ARO);
+disp(['vfast:: Autocovariance adjustment matrix.'])
+M               = BiasAdjMat(R,ntp,ntp-1);
 
 disp(['vfast:: getting FAST basis coefficients.'])
 g              = (M*B)\a;
-g              = g./g(1,:); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
+vfull          = Bfull*g;
+v              = M*g;
+v              = v./v(1,;); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
 
 % Pervoxel -----------------------------------
 % 
@@ -97,7 +102,7 @@ for iv = 1:nvox
     if ~mod(iv,5000); disp(['on voxel: ' num2str(iv)]); end; 
     
     % Worsely's quick W 
-    [Ainvt,posdef]  = chol(toep(g(:,iv))); 
+    [Ainvt,posdef]  = chol(toep(vfull(:,iv))); 
     p1              = size(Ainvt,1); % this is basically posdef - 1, but we'll keep it as Keith Worsely's code. 
     A               = inv(Ainvt'); 
     
@@ -116,10 +121,10 @@ for iv = 1:nvox
     wzv(iv)  = wstat.zval;
 end
 
- function B = ARBasis(ARO,TR)
+ function B = ACFbasis(MaxLag,TR)
  % matrix of Mxlag x basis
  % TEN, 2020
-    t = [(0:ARO)*TR]';
+    t = [(0:MaxLag)*TR]';
     d = 2.^(floor(log2(TR/4)):log2(64));
     d(7:end) = [];
     j = [0 1];%[0 1]; % or	[0 1 2], but I don't think j=2 buys us much
