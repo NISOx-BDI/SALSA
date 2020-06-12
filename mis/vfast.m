@@ -1,63 +1,67 @@
-% clear
-% 
-% clear
-% 
-% ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
-% tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
-% dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
-% path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
-% parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
-% WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
-% %feat5/featlib.cc 
-% 
-% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
-% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/utils/Trend')
-% addpath('/Users/sorooshafyouni/Home/matlab/spm12')
-% 
-% [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
-% Y = Y';
-% Y = Y - mean(Y);
-% T=900;
-% TR = 0.645; 
-% 
-% disp('MC params.')
-% MCp      = load(parmat); 
-% MCp      = GenMotionParam(MCp,24); 
-% X        = [load(dmat_fname) MCp];
-% 
-% X        = X-mean(X); 
-% 
-% disp('hpf')
-% K = hp_fsl(size(Y,1),100,TR);    
-% X     = K*X;    % high pass filter the design
-% Y     = K*Y;  % high pass filter the data
-% 
-% X = [ones(T,1) X];
-% tcon     = zeros(1,size(X,2));
-% tcon(2)  = 1;
-% 
-% % [cbhat_gm,RES_gm,stat_gm,se_gm,tv_gm,zv_gm,Wcbhat_gm,WYhat_gm,WRES_gm,wse_gm,wtv_gm,wzv_gm] = nfast5(Ygm,X,0.645,tcon); 
-% % [PSDx_gm,PSDy_gm]   = DrawMeSpectrum(RES_gm,1);
-% % [WPSDx_gm,WPSDy_gm] = DrawMeSpectrum(WRES_gm,1);
-% % [cbhat_wm,RES_wm,stat_wm,se_wm,tv_wm,zv_wm,Wcbhat_wm,WYhat_wm,WRES_wm,wse_wm,wtv_wm,wzv_wm] = nfast5(Ywm,X,0.645,tcon); 
-% % [PSDx_wm,PSDy_wm]   = DrawMeSpectrum(RES_wm,1);
-% % [WPSDx_wm,WPSDy_wm] = DrawMeSpectrum(WRES_wm,1);
-% % figure; hold on; grid on; 
-% % plot(PSDx_wm,mean(PSDy_wm,2))
-% % plot(WPSDx_wm,mean(WPSDy_wm,2))
-% 
-% ARO = 20; 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast5(Y,X,TR,tcon,ARO);
-% 
-% [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
-% [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
-% 
-% figure; hold on; grid on;
-% plot(PSDx,mean(PSDy,2))
-% plot(WPSDx,mean(WPSDy,2))
+clear
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast(Y,X,TR,tcon,ARO)
+ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
+tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
+dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
+path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
+parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
+%feat5/featlib.cc 
 
+addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
+addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/utils/Trend')
+addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+
+[Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
+Y = Y';
+Y = Y - mean(Y);
+T=900;
+TR = 0.645; 
+
+disp('MC params.')
+MCp      = load(parmat); 
+MCp      = GenMotionParam(MCp,24); 
+X        = [load(dmat_fname) MCp];
+
+X        = X-mean(X); 
+
+disp('hpf')
+K = hp_fsl(size(Y,1),100,TR);    
+X     = K*X;    % high pass filter the design
+Y     = K*Y;  % high pass filter the data
+
+X = [ones(T,1) X];
+tcon     = zeros(1,size(X,2));
+tcon(2)  = 1;
+
+% [cbhat_gm,RES_gm,stat_gm,se_gm,tv_gm,zv_gm,Wcbhat_gm,WYhat_gm,WRES_gm,wse_gm,wtv_gm,wzv_gm] = nfast5(Ygm,X,0.645,tcon); 
+% [PSDx_gm,PSDy_gm]   = DrawMeSpectrum(RES_gm,1);
+% [WPSDx_gm,WPSDy_gm] = DrawMeSpectrum(WRES_gm,1);
+% [cbhat_wm,RES_wm,stat_wm,se_wm,tv_wm,zv_wm,Wcbhat_wm,WYhat_wm,WRES_wm,wse_wm,wtv_wm,wzv_wm] = nfast5(Ywm,X,0.645,tcon); 
+% [PSDx_wm,PSDy_wm]   = DrawMeSpectrum(RES_wm,1);
+% [WPSDx_wm,WPSDy_wm] = DrawMeSpectrum(WRES_wm,1);
+% figure; hold on; grid on; 
+% plot(PSDx_wm,mean(PSDy_wm,2))
+% plot(WPSDx_wm,mean(WPSDy_wm,2))
+
+aclagest  = 20;
+aclageval = 100;  
+[cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast5(Y,X,TR,tcon,aclagest,aclageval);
+
+[PSDx,PSDy]   = DrawMeSpectrum(RES,1);
+[WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
+
+figure; hold on; grid on;
+plot(PSDx,mean(PSDy,2))
+plot(WPSDx,mean(WPSDy,2))
+
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast5(Y,X,TR,tcon,aclagest,aclageval)
+
+
+if ~exist('aclageval','var'); aclageval = aclagest.^2; end; 
+
+disp(['vfast:: #lags used to estimate acf: ' num2str(aclagest)])
+disp(['vfast:: #lags used to adjust acf:   ' num2str(aclageval)])
 
 [ntp,nvox]      = size(Y);
 
@@ -74,42 +78,41 @@ zv                = stat.zval;
 % Get the autocovariances
 disp(['vfast:: getting autocovariances.'])
 [~,~,autocovs]  = AC_fft(RES,ntp);
-a               = autocovs(:,1:ARO+1)';
+a               = autocovs(:,1:aclageval+1)';
 
 % matrix of basis
 disp(['vfast:: getting matrix of AR basis.'])
-Bfull           = ACFbasis(ntp-1,TR); 
-MaxLag          = ARO+1;  % I don't like calling this ARO, but, whatever we call it
-                          % it is the key free parameter
-B               = Bfull(1:MaxLag,:);
+Bfull          = ACFbasis(ntp-1,TR); 
+Best           = Bfull(1:aclagest+1,:);
+Beval          = Bfull(1:aclageval+1,:);
 
 % matrix of M
 disp(['vfast:: Autocovariance adjustment matrix.'])
-M               = BiasAdjMat(R,ntp,ntp-1);
+M              = BiasAdjMat(R,ntp,aclageval); % ntp-1 is not really feasible
 
 disp(['vfast:: getting FAST basis coefficients.'])
-g              = (M*B)\a;
-vfull          = Bfull*g;
-v              = M*g;
-v              = v./v(1,;); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
+g              = (M*Beval)\a;
+v              = Best*g;       % vfull = Bfull*g;
+v              = v./v(1,:); % normalise the FAST basis, assuming the same is valid here as it is in Appendix A
 
 % Pervoxel -----------------------------------
-% 
+disp(['vfast:: prewhiten the time series.'])
 % pre-allocate memory
 WYhat  = zeros(ntp,nvox); WRES = WYhat;
 Wcbhat = zeros(1,nvox); wse = Wcbhat; wtv = wse; wzv = wtv;
 for iv = 1:nvox
     if ~mod(iv,5000); disp(['on voxel: ' num2str(iv)]); end; 
     
-    % Worsely's quick W 
-    [Ainvt,posdef]  = chol(toep(vfull(:,iv))); 
+    % a seperate module as in arw.m
+    % Worsely's quick W ---------------------------------------------------
+    [Ainvt,posdef]  = chol(toep(v(:,iv))); 
     p1              = size(Ainvt,1); % this is basically posdef - 1, but we'll keep it as Keith Worsely's code. 
     A               = inv(Ainvt'); 
     
     W               = toep([A(p1,p1:-1:1) zeros(1,ntp-p1)],zeros(1,ntp)); 
     W(1:p1,1:p1)    = A;    
     W               = W.*(abs(W)> 1e-6); % not really important if I use Worsely's code. 
-    
+    %  --------------------------------------------------------------------
     % Whiten X & Y
     WYv        = W*Y(:,iv);
     WX         = W*X;
@@ -151,12 +154,18 @@ end
 % Appendix A & then mofidied for K from the MS Notes ---------------------
     M   = zeros(ARO+1);
     for l = 1:(ARO+1)
+        if ~mod(l,50); disp(['BiasAdjMat:: on lag: ' num2str(l)]); end; 
         Dl = diag(ones(1,ntp-l+1),l-1); % upper triangle
         for j = 1:(ARO+1)
+           if j < l; continue; end; % M is symm so, save time!
            DjDjt    = (diag(ones(1,ntp-j+1),j-1)+diag(ones(1,ntp-j+1),-j+1))/(1+(j==1));
            M(l,j)   = trace(R'*Dl*R*DjDjt);
         end
     end
+    
+    dM = M.*~eye(size(M)); % set the diag to zero
+    M  = M + dM'; % add back the lower triangle
+    
 % ------------------------------------------------------------------------
 
  end
