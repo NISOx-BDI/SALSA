@@ -102,7 +102,7 @@ for iv = 1:nvox
     if ~mod(iv,5000); disp(['on voxel: ' num2str(iv)]); end; 
     
     % Worsely's quick W 
-    [Ainvt,posdef]  = chol(toep(g(:,iv))); 
+    [Ainvt,posdef]  = chol(toep(vfull(:,iv))); 
     p1              = size(Ainvt,1); % this is basically posdef - 1, but we'll keep it as Keith Worsely's code. 
     A               = inv(Ainvt'); 
     
