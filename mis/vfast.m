@@ -1,61 +1,61 @@
-clear
+% clear
+% 
+% ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
+% tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
+% dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
+% path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
+% parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+% WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
+% %feat5/featlib.cc 
+% 
+% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
+% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/utils/Trend')
+% addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+% 
+% [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
+% Y = Y';
+% Y = Y - mean(Y);
+% T=900;
+% TR = 0.645; 
+% 
+% disp('MC params.')
+% MCp      = load(parmat); 
+% MCp      = GenMotionParam(MCp,24); 
+% X        = [load(dmat_fname) MCp];
+% 
+% X        = X-mean(X); 
+% 
+% disp('hpf')
+% K = hp_fsl(size(Y,1),100,TR);    
+% X     = K*X;    % high pass filter the design
+% Y     = K*Y;  % high pass filter the data
+% 
+% X = [ones(T,1) X];
+% tcon     = zeros(1,size(X,2));
+% tcon(2)  = 1;
+% 
+% % [cbhat_gm,RES_gm,stat_gm,se_gm,tv_gm,zv_gm,Wcbhat_gm,WYhat_gm,WRES_gm,wse_gm,wtv_gm,wzv_gm] = nfast5(Ygm,X,0.645,tcon); 
+% % [PSDx_gm,PSDy_gm]   = DrawMeSpectrum(RES_gm,1);
+% % [WPSDx_gm,WPSDy_gm] = DrawMeSpectrum(WRES_gm,1);
+% % [cbhat_wm,RES_wm,stat_wm,se_wm,tv_wm,zv_wm,Wcbhat_wm,WYhat_wm,WRES_wm,wse_wm,wtv_wm,wzv_wm] = nfast5(Ywm,X,0.645,tcon); 
+% % [PSDx_wm,PSDy_wm]   = DrawMeSpectrum(RES_wm,1);
+% % [WPSDx_wm,WPSDy_wm] = DrawMeSpectrum(WRES_wm,1);
+% % figure; hold on; grid on; 
+% % plot(PSDx_wm,mean(PSDy_wm,2))
+% % plot(WPSDx_wm,mean(WPSDy_wm,2))
+% 
+% aclagest  = 20;
+% aclageval = 100;  
+% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast5(Y,X,TR,tcon,aclagest,aclageval);
+% 
+% [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
+% [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
+% 
+% figure; hold on; grid on;
+% plot(PSDx,mean(PSDy,2))
+% plot(WPSDx,mean(WPSDy,2))
 
-ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
-tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
-dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
-path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
-parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
-WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
-%feat5/featlib.cc 
-
-addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
-addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/utils/Trend')
-addpath('/Users/sorooshafyouni/Home/matlab/spm12')
-
-[Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
-Y = Y';
-Y = Y - mean(Y);
-T=900;
-TR = 0.645; 
-
-disp('MC params.')
-MCp      = load(parmat); 
-MCp      = GenMotionParam(MCp,24); 
-X        = [load(dmat_fname) MCp];
-
-X        = X-mean(X); 
-
-disp('hpf')
-K = hp_fsl(size(Y,1),100,TR);    
-X     = K*X;    % high pass filter the design
-Y     = K*Y;  % high pass filter the data
-
-X = [ones(T,1) X];
-tcon     = zeros(1,size(X,2));
-tcon(2)  = 1;
-
-% [cbhat_gm,RES_gm,stat_gm,se_gm,tv_gm,zv_gm,Wcbhat_gm,WYhat_gm,WRES_gm,wse_gm,wtv_gm,wzv_gm] = nfast5(Ygm,X,0.645,tcon); 
-% [PSDx_gm,PSDy_gm]   = DrawMeSpectrum(RES_gm,1);
-% [WPSDx_gm,WPSDy_gm] = DrawMeSpectrum(WRES_gm,1);
-% [cbhat_wm,RES_wm,stat_wm,se_wm,tv_wm,zv_wm,Wcbhat_wm,WYhat_wm,WRES_wm,wse_wm,wtv_wm,wzv_wm] = nfast5(Ywm,X,0.645,tcon); 
-% [PSDx_wm,PSDy_wm]   = DrawMeSpectrum(RES_wm,1);
-% [WPSDx_wm,WPSDy_wm] = DrawMeSpectrum(WRES_wm,1);
-% figure; hold on; grid on; 
-% plot(PSDx_wm,mean(PSDy_wm,2))
-% plot(WPSDx_wm,mean(WPSDy_wm,2))
-
-aclagest  = 20;
-aclageval = 100;  
-[cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast5(Y,X,TR,tcon,aclagest,aclageval);
-
-[PSDx,PSDy]   = DrawMeSpectrum(RES,1);
-[WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
-
-figure; hold on; grid on;
-plot(PSDx,mean(PSDy,2))
-plot(WPSDx,mean(WPSDy,2))
-
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast5(Y,X,TR,tcon,aclagest,aclageval)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast(Y,X,TR,tcon,aclagest,aclageval)
 
 
 if ~exist('aclageval','var'); aclageval = aclagest.^2; end; 
