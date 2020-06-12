@@ -27,7 +27,7 @@ X = [ones(T,1) X];
 tcon     = zeros(1,size(X,2));
 tcon(2)  = 1;
 
-[cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw5(Y,X,tcon,20,ImgStat,path2mask,[]);
+[cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = arw5(Y,X,tcon,20,ImgStat,[],[]);
 
 [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
