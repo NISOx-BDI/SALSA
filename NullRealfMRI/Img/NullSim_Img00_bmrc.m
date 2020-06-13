@@ -224,13 +224,13 @@ elseif strcmpi(pwdmethod,'vFAST20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     aclageval = 20; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast(Y,X,TR,glmcont,Mord,aclageval,K);      
     
-elseif strcmpi(pwdmethod,'FEATFAST20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+elseif strcmpi(pwdmethod,'FASTFEAT20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      aclageval = 20; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
-elseif strcmpi(pwdmethod,'FEATFAST50') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+elseif strcmpi(pwdmethod,'FASTFEAT50') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      aclageval = 50; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
-elseif strcmpi(pwdmethod,'FEATFAST100') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+elseif strcmpi(pwdmethod,'FASTFEAT100') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      aclageval = 100; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
     
