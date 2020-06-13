@@ -54,14 +54,14 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
     
     acfFWHMl   = 5; 
 
-    disp('::vfeat5::')
+    disp('::fastfeat::')
     if ~exist('badjflag','var');   badjflag = 0;    end;
     if ~exist('K','var');          K        = [];   end; 
     
     if ~exist('aclageval','var') || isempty(aclageval) && tukey_m ~=-2
         aclageval = tukey_m.^2; 
     elseif ~exist('aclageval','var') || isempty(aclageval) && tukey_m ==-2
-        error('vfeat5:: Specify aclageval.')
+        error('fastfeat:: Specify aclageval.')
     end; 
 
     
@@ -72,8 +72,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
     tv                   = stat.tval;
     zv                   = stat.zval;
     
-    disp(['vfeat5:: #lags used to estimate acf: ' num2str(tukey_m)])
-    disp(['vfeat5:: #lags used to adjust acf:   ' num2str(aclageval)])    
+    disp(['fastfeat:: #lags used to estimate acf: ' num2str(tukey_m)])
+    disp(['fastfeat:: #lags used to adjust acf:   ' num2str(aclageval)])    
 
     
     pinvX               = pinv(X); 
@@ -90,10 +90,10 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
 
     % smooth ACF
     if ~isempty(path2mask)
-        disp(['vfeat5:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+        disp(['fastfeat:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
         acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
     else
-        disp('No smoothing is done on the ACF.')
+        disp('fastfeat:: No smoothing is done on the ACF.')
     end
     % make the pwfilter
     W_fft       = establish_pwfilter(acf_tukey,ntp);
@@ -114,9 +114,9 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
     wtv      = zeros(nvox,1);
     wzv      = zeros(nvox,1);
     
-    disp('vfeat5:: Refit the prewhitened model.')
+    disp('fastfeat:: Refit the prewhitened model.')
     for iv = 1:nvox
-        if ~mod(iv,5000); disp(['feat5:: on voxel: ' num2str(iv)]); end; 
+        if ~mod(iv,5000); disp(['fastfeat:: on voxel: ' num2str(iv)]); end; 
         WXnoint = prewhiten_model(Xnoint_fft,W_fft(:,iv),ntp);
         WX      = [ones(ntp,1),WXnoint]; % add back the intercept 
         
@@ -131,7 +131,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
         %WBLUSRES(:,iv) = BLUSres(WY(:,iv),WX,(P+1):T);
     end
        
-    disp('vfeat5:: done.')
+    disp('fastfeat:: done.')
 
 end
 
@@ -146,7 +146,7 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,K,aclageval)
         acftmp     = acv./acv(1,:);         
         where2stop = FindBreakPoint(acftmp,ntp);
         
-        disp('# of voxel with flat acf.')
+        disp('fastfeat:: # of voxel with flat acf.')
         sum(where2stop==1)
         
         if tukey_m == -1
@@ -163,14 +163,14 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,K,aclageval)
         end
             
         tukey_m    = fix(prctile(where2stop,99.99)); % the max, but avoid outlier
-        disp(['vfeat5:: mean breakpint: ' num2str(mean(where2stop)) ', max:' num2str(max(where2stop)) ', 99th: ' num2str(tukey_m)])
+        disp(['fastfeat:: mean breakpint: ' num2str(mean(where2stop)) ', max:' num2str(max(where2stop)) ', 99th: ' num2str(tukey_m)])
     end
     
     % adjust for bias
-    disp('vfeat5:: adjusting autocovariances: start.')
+    disp('fastfeat:: adjusting autocovariances: start.')
     if nargin==4  && ~isempty(R) && ~isempty(K)
         if ~ismatrix(K); error('feat5:: adjusting autocovariances: filter should be a matrix'); end; 
-        disp('vfeat5:: adjusting autocovariances: the filter is injected into the design.')
+        disp('fastfeat:: adjusting autocovariances: the filter is injected into the design.')
         M = ACFBiasAdjMat(R*K,ntp,aclageval);
     elseif nargin>=3  && ~isempty(R) && isempty(K)
         M = ACFBiasAdjMat(R,ntp,aclageval);
@@ -186,7 +186,7 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,K,aclageval)
     acf   = Best*g;
     acf   = acf./acf(1,:); 
     
-    disp('vfeat5:: adjusting autocovariances: done.')
+    disp('fastfeat:: adjusting autocovariances: done.')
 
     
     if tukey_m == -1 % this is trouble.
