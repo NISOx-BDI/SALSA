@@ -224,6 +224,15 @@ elseif strcmpi(pwdmethod,'vFAST20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     aclageval = 20; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast(Y,X,TR,glmcont,Mord,aclageval,K);      
     
+elseif strcmpi(pwdmethod,'FASTFEAT1') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT5') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 5; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT10') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 10; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);    
 elseif strcmpi(pwdmethod,'FASTFEAT20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      aclageval = 20; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
@@ -232,7 +241,7 @@ elseif strcmpi(pwdmethod,'FASTFEAT50') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
 elseif strcmpi(pwdmethod,'FASTFEAT100') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      aclageval = 100; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,InputImgStat,path2mask,1,K);  
     
 elseif strcmpi(pwdmethod,'cFAST') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = cfast5(Y,X,TR,glmcont,InputImgStat,WMseg);
