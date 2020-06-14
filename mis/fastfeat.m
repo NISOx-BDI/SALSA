@@ -174,7 +174,7 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,aclageval,ImgStat,path2mask)
     maxlag      = max(aclageval,tukey_m);
     acv         = acv(1:maxlag+1,:);    
     
-    if ~isempty(path2mask) && ~isempty(ImgStat)
+    if ~isempty(path2mask) || ~isempty(ImgStat)
         acfFWHMl = 5; 
         disp(['fastfeat:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
         acv   = ApplyFSLSmoothing(acv',acfFWHMl,ImgStat,path2mask)';
