@@ -28,8 +28,9 @@
 % tcon(2)  = 1;
 % 
 % aclageval = 50; 
-% tukey_m   = -2; 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfeat(Y,X,TR,tcon,tukey_m,aclageval,ImgStat,path2mask,1,[]);
+% tukey_m   = 60; 
+% path2mask = [];
+% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat0(Y,X,TR,tcon,tukey_m,aclageval,ImgStat,path2mask,1,K);
 % 
 % [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 % [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
@@ -51,22 +52,24 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
 % ${FSLDIR}/src/feat5/featlib.cc
 %
 % SA, Ox, 2020
-    
-    acfFWHMl   = 5; 
 
+    [ntp,nvox]  = size(Y); 
+    
     disp('::fastfeat::')
     if ~exist('badjflag','var');   badjflag = 0;    end;
-    if ~exist('K','var');          K        = [];   end; 
-    
+       
     if ~exist('aclageval','var') || isempty(aclageval) && tukey_m ~=-2
         aclageval = tukey_m.^2; 
     elseif ~exist('aclageval','var') || isempty(aclageval) && tukey_m ==-2
         error('fastfeat:: Specify aclageval.')
     end; 
 
+    if ~exist('K','var') || isempty(K)          
+        K  = eye(ntp); 
+    else
+        disp(['fastfeat:: filter is incorporated into design.'])
+    end     
     
-    ntp                   = size(Y,1); 
-    nvox                  = size(Y,2); 
     [cbhat,~,~,stat] = myOLS(Y,X,tcon); % not really needed unless for comparison
     se                   = stat.se;
     tv                   = stat.tval;
@@ -85,16 +88,17 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
     % calc acf & tukey taper it
     if isempty(tukey_m); tukey_m = round(sqrt(ntp)); end
     
-    
-    acf_tukey   = acf_prep(RES,TR,tukey_m,ResidFormingMat,K,aclageval);
+    R           = ResidFormingMat*K; % inject the filter into R
+    acf_tukey   = acf_prep(RES,TR,tukey_m,R,aclageval,ImgStat,path2mask);
 
-    % smooth ACF
-    if ~isempty(path2mask)
-        disp(['fastfeat:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
-        acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
-    else
-        disp('fastfeat:: No smoothing is done on the ACF.')
-    end
+%    % smooth ACF
+%     if ~isempty(path2mask)
+%         disp(['fastfeat:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+%         acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
+%     else
+%         disp('fastfeat:: No smoothing is done on the ACF.')
+%     end
+
     % make the pwfilter
     W_fft       = establish_pwfilter(acf_tukey,ntp);
 
@@ -135,19 +139,19 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
 
 end
 
-function acf_tukey = acf_prep(RES,TR,tukey_m,R,K,aclageval)
+function acf_tukey = acf_prep(RES,TR,tukey_m,R,aclageval,ImgStat,path2mask)
 % RES should be TxV. T is time, V voxel. 
     
     [ntp,nvox]  = size(RES);
     [~,~,acv]   = AC_fft(RES,ntp);
     acv         = acv';
     
+    flag2 = 0;
     if tukey_m < 0
+        %flag2      = 1; 
         acftmp     = acv./acv(1,:);         
         where2stop = FindBreakPoint(acftmp,ntp);
-        
-        disp('fastfeat:: # of voxel with flat acf.')
-        sum(where2stop==1)
+        clear acftmp
         
         if tukey_m == -1
             
@@ -162,19 +166,28 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,K,aclageval)
             where2stop(hidx) = where2stop(hidx).*3;
         end
             
-        tukey_m    = fix(prctile(where2stop,99.99)); % the max, but avoid outlier
+        tukey_m    = fix(prctile(where2stop,99.999)); % the max, but avoid outlier
         disp(['fastfeat:: mean breakpint: ' num2str(mean(where2stop)) ', max:' num2str(max(where2stop)) ', 99th: ' num2str(tukey_m)])
+        where2stop(where2stop>tukey_m) = tukey_m; % set everything above tukey_m to tukey_m
     end
+    
+    maxlag      = max(aclageval,tukey_m);
+    acv         = acv(1:maxlag+1,:);    
+    
+    if ~isempty(path2mask) && ~isempty(ImgStat)
+        acfFWHMl = 10; 
+        disp(['fastfeat:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+        acv   = ApplyFSLSmoothing(acv',acfFWHMl,ImgStat,path2mask)';
+    else
+        disp('fastfeat:: No smoothing is done on the ACF.')
+    end    
     
     % adjust for bias
     disp('fastfeat:: adjusting autocovariances: start.')
-    if nargin==4  && ~isempty(R) && ~isempty(K)
-        if ~ismatrix(K); error('feat5:: adjusting autocovariances: filter should be a matrix'); end; 
-        disp('fastfeat:: adjusting autocovariances: the filter is injected into the design.')
-        M = ACFBiasAdjMat(R*K,ntp,aclageval);
-    elseif nargin>=3  && ~isempty(R) && isempty(K)
+    if  ~isempty(R)
+        if ~ismatrix(R); error('feat5:: adjusting autocovariances: filter should be a matrix'); end; 
         M = ACFBiasAdjMat(R,ntp,aclageval);
-    elseif nargin<3 || isempty(R)
+    else
         M = eye(aclageval+1); 
     end
     
@@ -185,22 +198,35 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,K,aclageval)
     g     = (M*Beval)\acv(1:aclageval+1,:);
     acf   = Best*g;
     acf   = acf./acf(1,:); 
-    
     disp('fastfeat:: adjusting autocovariances: done.')
 
     
-    if tukey_m == -1 % this is trouble.
+    if flag2  % this is trouble.
+        disp(['fastfeat:: tapering for individual voxel.']);
+        acf_tukey = zeros(tukey_m+1,nvox);
         for i = 1:size(acf,2)
-            acfmask                  = zeros(1:ntp); 
-            acfmask(1:where2stop(i)) = 1;
-            acf(:,i)                 = acf(:,i).*acfmask;
+            if ~mod(i,5000); disp(['fastfeat:: taper ' num2str(i)]); end;
+            % find the individual breakpoint and apply
+            tt_tmp                    = where2stop(i);
+            %if tt_tmp>tukey_m; tt_tmp = tukey_m; end; 
+            lag                       = 1:tt_tmp;
+            acfmask                   = zeros(tukey_m+1,1); 
+            acfmask(lag)              = 1;
+            acf(:,i)                  = acf(:,i).*acfmask;
+            
+            % apply single tukey
+            lag                      = lag-1;
+            window                   = .5 * (1 + cos(pi .* lag ./ tt_tmp));
+            window                   = [window,zeros(1,(tukey_m+1)-tt_tmp)]; 
+            
+            acf_tukey(:,i)           = acf(:,i) .* window';
         end
     else
         % Tukey taper
-        acf         = acf(1:tukey_m,:);
-        lag         = 0:tukey_m-1;
-        window      = .5 * (1 + cos(pi .* lag ./ tukey_m));
-        acf_tukey   = acf .* repmat(window',1,nvox);
+        acf                         = acf(1:tukey_m,:);
+        lag                         = 0:tukey_m-1;
+        window                      = .5 * (1 + cos(pi .* lag ./ tukey_m));
+        acf_tukey                   = acf .* repmat(window',1,nvox);
     end
 end
 
@@ -268,6 +294,7 @@ end
 % SA, Ox, 2020
 
 % Appendix A & then mofidied for K from the MS Notes ---------------------
+    disp(['BiasAdjMat::'])
     M   = zeros(ARO+1);
     for l = 1:(ARO+1)
         if ~mod(l,50); disp(['BiasAdjMat:: on lag: ' num2str(l)]); end; 
