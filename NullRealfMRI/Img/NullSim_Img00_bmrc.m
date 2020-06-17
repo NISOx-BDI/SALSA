@@ -212,6 +212,8 @@ disp('++++++++++++++++++++++++++++++++++++')
 MPparamNum = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask,K);
+    
+% -------------------- FAST     
 elseif strcmpi(pwdmethod,'gFAST') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gfast(Y,X,TR,glmcont,1);
 elseif strcmpi(pwdmethod,'vFAST100') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -223,42 +225,88 @@ elseif strcmpi(pwdmethod,'vFAST50') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif strcmpi(pwdmethod,'vFAST20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     aclageval = 20; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = vfast(Y,X,TR,glmcont,Mord,aclageval,K);      
-    
-elseif strcmpi(pwdmethod,'FASTFEAT1') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     aclageval = 1; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,[],[],1,K);
-elseif strcmpi(pwdmethod,'FASTFEAT5') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     aclageval = 5; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,[],[],1,K);
-elseif strcmpi(pwdmethod,'FASTFEAT10') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     aclageval = 10; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,[],[],1,K);    
-elseif strcmpi(pwdmethod,'FASTFEAT20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     aclageval = 20; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,[],[],1,K);
-elseif strcmpi(pwdmethod,'FASTFEAT50') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     aclageval = 50; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,[],[],1,K);
-elseif strcmpi(pwdmethod,'FASTFEAT100') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     aclageval = 100; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,aclageval,[],[],1,K);  
-    
 elseif strcmpi(pwdmethod,'cFAST') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = cfast5(Y,X,TR,glmcont,InputImgStat,WMseg);
+    
+% -------------------- FAST FEAT ------------------------------------------
+elseif strcmpi(pwdmethod,'FASTFEAT1') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT5') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 5; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT10') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 10; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);    
+elseif strcmpi(pwdmethod,'FASTFEAT20') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 20; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT50') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 50; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT100') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 100; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);  
+    
+elseif strcmpi(pwdmethod,'FASTFEAT20T0S0') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 20; 
+     ACFRegF   = 0; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT50T0S0') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 50;
+     ACFRegF   = 0; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT100T0S0') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 100;
+     ACFRegF   = 0;
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);      
+    
+% ------------------------ ACFadj -----------------------------------------
+elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ACFRegF = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,InputImgStat,path2mask,0,[]);
 elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,1,0,K);   
+    ACFRegF = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,InputImgStat,path2mask,1,K); 
+elseif strcmpi(pwdmethod,'ACFadjT0S0') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
+    ACFRegF      = 0; 
+    InputImgStat = [];
+    path2mask    = [];
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,InputImgStat,path2mask,1,K);   
+elseif strcmpi(pwdmethod,'ACFadjT0S1') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
+    ACFRegF      = 0; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,InputImgStat,path2mask,1,K);   
+    
+
+% ------------------------ Two stage Methods: gReML x ACF ------------------------------    
 elseif strcmpi(pwdmethod,'gFASTxACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K);
 elseif strcmpi(pwdmethod,'gFASTxACFadj2t') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K,WMseg);    
 elseif strcmpi(pwdmethod,'gFASTxACFadj2t2j') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
-    J = 2; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K,WMseg,J);        
+    J            = 2; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K,WMseg,J);  
+
+elseif strcmpi(pwdmethod,'gFASTxACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K);
+elseif strcmpi(pwdmethod,'gFASTxACFadj2t') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
+    J            = 2; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K,WMseg,J);    
+elseif strcmpi(pwdmethod,'gFASTxACFadj2t2j') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
+    J            = 2; 
+    ACFRegF      = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,path2mask,1,K,WMseg,J);      
+elseif strcmpi(pwdmethod,'gFASTxACFadj2t2jT0S0') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
+    J            = 2; 
+    path2mask    = []; 
+    ACFRegF      = 0;                                                             %= gReMLxACF(Y,X,TR,tcon   ,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K,WMSeg,J)
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord   ,ACFRegF,InputImgStat,path2mask,1,K,WMseg,J);      
+% ------------------------ Two stage Methods: gReML x AR-W ------------------------------        
 elseif strcmpi(pwdmethod,'gReMLxARw2t2j') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
     J = 2; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = gReMLxARw(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,K,WMseg,J);  
-elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,InputImgStat,path2mask,0,[]);
+
+% ------------------------ ARMA MODELS ------------------------------------
 elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     error('Use the old script.')
 elseif strcmpi(pwdmethod,'ARMAReML') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
