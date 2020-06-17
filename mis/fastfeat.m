@@ -3,6 +3,7 @@
 % dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
 % path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
 % parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+% WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
 % %feat5/featlib.cc 
 % 
 % addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
@@ -11,6 +12,15 @@
 % [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
 % Y = Y';
 % Y = Y - mean(Y);
+% 
+% [~,Idx_wm]       = MaskImg(Y',WMSeg,ImgStat); 
+% Idx_wm           = Idx_wm{1};
+% Ywm              = Y(:,Idx_wm); 
+% Idx_gm           = ~Idx_wm;
+% Y                = Y(:,Idx_gm); % time series in GM & CSF
+% Y                = Y - mean(Y);
+% Y                = Y(:,1:2:end); 
+% 
 % T=900;
 % TR=0.645;
 % disp('MC params.')
@@ -20,27 +30,28 @@
 % 
 % disp('hpf')
 % K = hp_fsl(size(Y,1),100,0.645);    
-% X     = K*X;    % high pass filter the design
-% Y     = K*Y;  % high pass filter the data
+% % X     = K*X;    % high pass filter the design
+% % Y     = K*Y;  % high pass filter the data
 % 
-% X = [ones(T,1) X];
+% X        = [ones(T,1) X];
 % tcon     = zeros(1,size(X,2));
 % tcon(2)  = 1;
 % 
-% aclageval = 50; 
-% tukey_m   = 60; 
-% path2mask = [];
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat0(Y,X,TR,tcon,tukey_m,aclageval,ImgStat,path2mask,1,K);
+% aclageval = 100; 
+% tukey_m   = 30; 
+% tukey_f   = 0;
+% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat0(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,[],[],1,K);
 % 
 % [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 % [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
 % 
-% figure; hold on; grid on; 
-% plot(PSDx,mean(PSDy,2))
+% %figure; 
+% hold on; grid on; 
+% %plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,tcon,tukey_m,aclageval,ImgStat,path2mask,badjflag,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,ImgStat,path2mask,badjflag,K)
 % Y      : TxV
 % X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
@@ -80,24 +91,16 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
 
     
     pinvX               = pinv(X); 
-    ResidFormingMat     = eye(ntp)-X*pinvX; % residual forming matrix 
-    RES                 = ResidFormingMat*Y;    
+    R                   = eye(ntp)-X*pinvX; % residual forming matrix 
+    RES                 = R*Y;    
     
-    if ~badjflag; ResidFormingMat = [];  end
+    if ~badjflag; R = [];  end
     
     % calc acf & tukey taper it
     if isempty(tukey_m); tukey_m = round(sqrt(ntp)); end
     
-    R           = ResidFormingMat*K; % inject the filter into R
-    acf_tukey   = acf_prep(RES,TR,tukey_m,R,aclageval,ImgStat,path2mask);
-
-%    % smooth ACF
-%     if ~isempty(path2mask)
-%         disp(['fastfeat:: Estimate ACF, smooth on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
-%         acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
-%     else
-%         disp('fastfeat:: No smoothing is done on the ACF.')
-%     end
+    R           = R*K; % inject the filter into R
+    acf_tukey   = acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,ImgStat,path2mask);
 
     % make the pwfilter
     W_fft       = establish_pwfilter(acf_tukey,ntp);
@@ -113,7 +116,6 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
     Wcbhat   = zeros(1,nvox);
     WYhat    = zeros(ntp,nvox); 
     WRES     = zeros(ntp,nvox);
-    %WBLUSRES = zeros(ntp,nvox);
     wse      = zeros(nvox,1); 
     wtv      = zeros(nvox,1);
     wzv      = zeros(nvox,1);
@@ -139,7 +141,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,
 
 end
 
-function acf_tukey = acf_prep(RES,TR,tukey_m,R,aclageval,ImgStat,path2mask)
+function acf_tukey = acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,ImgStat,path2mask)
 % RES should be TxV. T is time, V voxel. 
     
     [ntp,nvox]  = size(RES);
@@ -173,15 +175,7 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,aclageval,ImgStat,path2mask)
     
     maxlag      = max(aclageval,tukey_m);
     acv         = acv(1:maxlag+1,:);    
-    
-    if ~isempty(path2mask) || ~isempty(ImgStat)
-        acfFWHMl = 5; 
-        disp(['fastfeat:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
-        acv   = ApplyFSLSmoothing(acv',acfFWHMl,ImgStat,path2mask)';
-    else
-        disp('fastfeat:: No smoothing is done on the ACF.')
-    end    
-    
+        
     % adjust for bias
     disp('fastfeat:: adjusting autocovariances: start.')
     if  ~isempty(R)
@@ -223,11 +217,26 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,R,aclageval,ImgStat,path2mask)
         end
     else
         % Tukey taper
-        acf                         = acf(1:tukey_m,:);
-        lag                         = 0:tukey_m-1;
-        window                      = .5 * (1 + cos(pi .* lag ./ tukey_m));
-        acf_tukey                   = acf .* repmat(window',1,nvox);
+        if tukey_f
+            disp(['feat5:: Tukey regularisation.'])
+            acf                         = acf(1:tukey_m,:);
+            lag                         = 0:tukey_m-1;
+            window                      = .5 * (1 + cos(pi .* lag ./ tukey_m));
+            acf_tukey                   = acf .* repmat(window',1,nvox);
+        else
+            disp(['fastfeat:: No Tukey regularisation is set.'])
+            acf_tukey                   = acf(1:tukey_m,:);
+        end
     end
+    
+    if ~isempty(path2mask) || ~isempty(ImgStat)
+        acfFWHMl = 5; 
+        disp(['fastfeat:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+        acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
+    else
+        disp('fastfeat:: No smoothing is done on the ACF.')
+    end        
+    
 end
 
 function W_fft = establish_pwfilter(acf,ntp)
@@ -334,7 +343,7 @@ end
  % TEN, 2020
     t = [(0:MaxLag)*TR]';
     d = 2.^(floor(log2(TR/4)):log2(64));
-    d(7:end) = [];
+    d(7:end) = []; % as per spm_Ce.m code.
     j = [0 1];%[0 1]; % or	[0 1 2], but I don't think j=2 buys us much
     J = repmat(j,length(t),length(d));
     T = repmat(t,1,length(j)*length(d));

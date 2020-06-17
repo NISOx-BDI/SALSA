@@ -3,6 +3,8 @@
 % dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
 % path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
 % parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+% WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
+% 
 % %feat5/featlib.cc 
 % 
 % addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
@@ -20,7 +22,7 @@
 % X        = [load(dmat_fname) MCp];
 % 
 % disp('hpf')
-% K = hp_fsl(size(Y,1),100,0.645);    
+% K     = hp_fsl(size(Y,1),100,0.645);    
 % X     = K*X;    % high pass filter the design
 % Y     = K*Y;  % high pass filter the data
 % 
@@ -28,17 +30,23 @@
 % tcon     = zeros(1,size(X,2));
 % tcon(2)  = 1;
 % 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF5(Y,X,TR,tcon,-2,ImgStat,path2mask,1,K);
+% tukey_m   = 30; 
+% tukey_f   = 0; 
+% J         = 2; 
+% path2mask = []; 
+% 
+% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF5(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,1,K,WMSeg,J);
 % 
 % [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 % [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
 % 
-% figure; hold on; grid on; 
+% %figure; 
+% hold on; grid on; 
 % plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,ImgStat,path2mask,badjflag,K,WMSeg,J)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K,WMSeg,J)
 % Performs two stage prewhitening: 1) FAST 2) ACFadj
 % 
 % tcon should already have the intercept
@@ -53,12 +61,13 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
     tv                 = stat.tval;
     zv                 = stat.zval;
 
-    if ~exist('WMSeg','var')
+    if ~exist('WMSeg','var') || isempty(WMSeg)
         disp(['gReMLxACF:: fit gloabl FAST.'])
         [WY,WX]           = gReML(Y,X,TR,tcon,0); 
         clear X Y
         disp(['gReMLxACF:: fit voxel-wise prewhitening.'])
-        [~,~,~,~,~,~,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,ImgStat,path2mask,badjflag,0,K);
+                                                  % = feat5(Y,X  ,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K)
+        [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K);
     else exist('WMSeg','var')
         disp('gReMLxACF:: prewhitening is being done on segemnts differently.')
         disp('gReMLxACF:: No ACF smoothing will be done.')
@@ -78,17 +87,17 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = gReM
         [WYgm,WXgm]       = gReML(Ygm,X,TR,tcon,[],J);
         
         disp('gReMLxACF:: apply feat5 on the grey matter & CSF')
-        [~,~,~,~,~,~,Wcbhat_gm,WYhat_gm,WRES_gm,WBLUSRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,ImgStat,[],badjflag,0,[]);
+                                                                    % = feat5(Y,X      ,tcon,tukey_m,tukey_f,[],[],badjflag,K)
+        [~,~,~,~,~,~,Wcbhat_gm,WYhat_gm,WRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,tukey_f,[],[],badjflag,K);
         
         disp('gReMLxACF:: apply feat5 on the white matter.')
-        [~,~,~,~,~,~,Wcbhat_wm,WYhat_wm,WRES_wm,WBLUSRES_wm,wse_wm,wtv_wm,wzv_wm] = feat5(Ywm,X,tcon,tukey_m,ImgStat,[],badjflag,0,K);
-        size(WYhat_gm), size(WYhat_wm)
+                                                                    % = feat5(Y,X  ,tcon,tukey_m,tukey_f,[],[],badjflag,K)
+        [~,~,~,~,~,~,Wcbhat_wm,WYhat_wm,WRES_wm,wse_wm,wtv_wm,wzv_wm] = feat5(Ywm,X,tcon,tukey_m,tukey_f,[],[],badjflag,K);
         
         % put back the results together.
         Wcbhat = zeros(nvox,1);
         WYhat  = zeros(ntp,nvox);
         WRES   = zeros(ntp,nvox);
-        WBLUSRES = [];
         wse    = zeros(nvox,1);
         wtv    = zeros(nvox,1);
         wzv    = zeros(nvox,1);
@@ -142,7 +151,7 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod,J)
         jidx  = find((stat.fp.*nvox)<0.001); % Harsh bonferroni 
         clear stat
     elseif pmethod==0
-    %%% ---------------------pooling by ACL/ACF
+    %%% ---------------------pooling by ACF(0)
         disp(['gReML:: pooling by autocorrelation.'])
         [acf ,acfCI] = AC_fft(RES,ntp);
         %acl         = sum(acf(1,1:fix(ntp/4)).^2); % Anderson's suugestion of ignoring beyond ntps/4
@@ -150,7 +159,8 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod,J)
         jidx         = find(abs(acf)>acfCI(2));  % only if a voxel exceeds the CI
         clear acf
     elseif pmethod==-1
-         disp(['gReML:: pooling amongst largest autocorrelation length.'])
+        %%% ---------------------pooling by ACL
+        disp(['gReML:: pooling amongst largest autocorrelation length.'])
         acf         = AC_fft(RES,ntp);
         acl         = sum(acf(:,1:fix(ntp/4)).^2,2); % Anderson's suugestion of ignoring beyond ntps/4
         jidx        = find(acl>prctile(acl,75));
@@ -189,9 +199,7 @@ function [WY,WX,RES] = gReML(Y,X,TR,tcon,pmethod,J)
     clear Yc v 
 
     % Error variance components for FAST
-    J        = 2; % Keep the basis limited to AR(1)
-    Vi       = CovFast(ntp,TR,J);
-    %Vi      = spm_Ce('fast',ntp,TR);
+    Vi       = CovFast(ntp,TR,J); %Very similar to: Vi = spm_Ce('fast',ntp,TR);
 
     % Call ReML to get the auto-covariance of the system
     disp('gReML:: Finding autocovariance matrix using ReML')
