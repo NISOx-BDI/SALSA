@@ -260,6 +260,19 @@ elseif strcmpi(pwdmethod,'FASTFEAT100T0S0') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%
      aclageval = 100;
      ACFRegF   = 0;
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,[],[],1,K);      
+
+elseif strcmpi(pwdmethod,'FASTFEAT20T0S5') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 20; 
+     ACFRegF   = 0; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,InputImgStat,path2mask,1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT50T0S5') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 50;
+     ACFRegF   = 0; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,InputImgStat,path2mask,1,K);
+elseif strcmpi(pwdmethod,'FASTFEAT100T0S5') %SPMfast %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     aclageval = 100;
+     ACFRegF   = 0;
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = fastfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,InputImgStat,path2mask,1,K);          
     
 % ------------------------ ACFadj -----------------------------------------
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
