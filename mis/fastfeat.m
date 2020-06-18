@@ -144,6 +144,8 @@ end
 function acf_tukey = acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,ImgStat,path2mask)
 % RES should be TxV. T is time, V voxel. 
     
+    acfFWHMl = 5; 
+
     [ntp,nvox]  = size(RES);
     [~,~,acv]   = AC_fft(RES,ntp);
     acv         = acv';
@@ -151,7 +153,16 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,ImgStat,path2ma
     flag2 = 0;
     if tukey_m < 0
         %flag2      = 1; 
-        acftmp     = acv./acv(1,:);         
+        acftmp     = acv./acv(1,:);        
+        
+        if ~isempty(path2mask) || ~isempty(ImgStat)
+            
+            disp(['feat5:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+            acftmp   = ApplyFSLSmoothing(acftmp',acfFWHMl,ImgStat,path2mask)';
+        else
+            disp('feat5:: No smoothing is done on the ACF.')
+        end            
+        
         where2stop = FindBreakPoint(acftmp,ntp);
         clear acftmp
         
@@ -194,6 +205,13 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,ImgStat,path2ma
     acf   = acf./acf(1,:); 
     disp('fastfeat:: adjusting autocovariances: done.')
 
+    if ~isempty(path2mask) || ~isempty(ImgStat)
+        disp(['fastfeat:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+        acf   = ApplyFSLSmoothing(acf',acfFWHMl,ImgStat,path2mask)';
+    else
+        disp('fastfeat:: No smoothing is done on the ACF.')
+    end          
+    
     
     if flag2  % this is trouble.
         disp(['fastfeat:: tapering for individual voxel.']);
@@ -228,15 +246,7 @@ function acf_tukey = acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,ImgStat,path2ma
             acf_tukey                   = acf(1:tukey_m,:);
         end
     end
-    
-    if ~isempty(path2mask) || ~isempty(ImgStat)
-        acfFWHMl = 5; 
-        disp(['fastfeat:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
-        acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
-    else
-        disp('fastfeat:: No smoothing is done on the ACF.')
-    end        
-    
+      
 end
 
 function W_fft = establish_pwfilter(acf,ntp)
