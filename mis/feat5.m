@@ -1,46 +1,47 @@
-% ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
-% tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
-% dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
-% path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
-% parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
-% %feat5/featlib.cc 
-% 
-% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
-% addpath('/Users/sorooshafyouni/Home/matlab/spm12')
-% 
-% [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
-% Y = Y';
-% Y = Y - mean(Y);
-% T=900;
-% 
-% disp('MC params.')
-% MCp       = load(parmat); 
-% MCp       = GenMotionParam(MCp,24); 
-% X         = [load(dmat_fname) MCp];
-% 
-% disp('hpf')
-% K         = hp_fsl(size(Y,1),100,0.645);    
-% X         = K*X;    % high pass filter the design
-% Y         = K*Y;  % high pass filter the data
-% 
-% X = [ones(T,1) X];
-% tcon      = zeros(1,size(X,2));
-% tcon(2)   = 1;
-% 
-% tukey_m   = 30; 
-% tukey_f   = 0; 
-% 
-% path2mask = []; 
-% ImgStat   = []; 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat(Y,X,tcon,tukey_m,tukey_f,ImgStat,path2mask,1,K);
-% 
-% [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
-% [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
-% 
-% %figure; 
-% hold on; grid on; 
-% plot(PSDx,mean(PSDy,2))
-% plot(WPSDx,mean(WPSDy,2))
+ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
+tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
+dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
+path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
+parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+%feat5/featlib.cc 
+
+addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
+addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+
+[Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
+Y = Y';
+Y = Y - mean(Y);
+T=900;
+
+disp('MC params.')
+MCp       = load(parmat); 
+MCp       = GenMotionParam(MCp,24); 
+X         = [load(dmat_fname) MCp];
+
+disp('hpf')
+K         = hp_fsl(size(Y,1),100,0.645);    
+X         = K*X;    % high pass filter the design
+Y         = K*Y;  % high pass filter the data
+
+X = [ones(T,1) X];
+tcon      = zeros(1,size(X,2));
+tcon(2)   = 1;
+
+tukey_m   = 30; 
+tukey_f   = 0; 
+
+ImgStat   = []; 
+path2mask = []; 
+
+[cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat(Y,X,tcon,tukey_m,tukey_f,ImgStat,path2mask,1,K);
+
+[PSDx,PSDy]   = DrawMeSpectrum(RES,1);
+[WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
+
+%figure; 
+hold on; grid on; 
+plot(PSDx,mean(PSDy,2))
+plot(WPSDx,mean(WPSDy,2))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,7 +96,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat(Y,X,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K)
 % Y      : TxV
 % X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
@@ -189,6 +190,8 @@ end
 function acf_tukey = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask)
 % RES should be TxV. T is time, V voxel. 
     
+    acfFWHMl = 5;
+
     [ntp,nvox]  = size(RES);
     [~,~,acv]   = AC_fft(RES,ntp);
     acv         = acv';
@@ -196,6 +199,15 @@ function acf_tukey = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask)
     % Find an optimal lag if asked-----------------------------------------
     if tukey_m < 0
         acftmp     = acv./acv(1,:);         
+        
+        if ~isempty(path2mask) || ~isempty(ImgStat)
+            
+            disp(['feat5:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+            acftmp   = ApplyFSLSmoothing(acftmp',acfFWHMl,ImgStat,path2mask)';
+        else
+            disp('feat5:: No smoothing is done on the ACF.')
+        end           
+        
         where2stop = FindBreakPoint(acftmp,ntp);
         
 %         disp('# of voxel with flat acf.')
@@ -232,6 +244,15 @@ function acf_tukey = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask)
     acv         = invM*acv(1:tukey_m+1,:); %apply adjustment
     acf         = acv./acv(1,:); % get ACF
     
+    % Spatially Smooth ACF-------------------------------------------------
+    if ~isempty(path2mask) || ~isempty(ImgStat)
+        disp(['feat5:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
+        acf   = ApplyFSLSmoothing(acf',acfFWHMl,ImgStat,path2mask)';
+    else
+        disp('feat5:: No smoothing is done on the ACF.')
+    end            
+    %----------------------------------------------------------------------    
+    
     % Tukey Tapering-------------------------------------------------------
     if tukey_m == -1 % this is trouble.
         for i = 1:size(acf,2)
@@ -253,15 +274,7 @@ function acf_tukey = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask)
         end
     end
     
-    % Spatially Smooth ACF-------------------------------------------------
-    if ~isempty(path2mask) || ~isempty(ImgStat)
-        acfFWHMl = 5; 
-        disp(['feat5:: Autocovariance is smoothed on ' num2str(acfFWHMl) 'mm and taper on ' num2str(tukey_m) ' lag.'])
-        acf_tukey   = ApplyFSLSmoothing(acf_tukey',acfFWHMl,ImgStat,path2mask)';
-    else
-        disp('feat5:: No smoothing is done on the ACF.')
-    end            
-    %----------------------------------------------------------------------
+
 end
 
 function W_fft = establish_pwfilter(acf,ntp)
@@ -279,7 +292,8 @@ function W_fft = establish_pwfilter(acf,ntp)
     
     % feat5/featlib.cc  line 127:
     % But why? If we do this, we'll lose the variance in the original signal
-    %W_fft0 = sqrt(sum(W_fft(2:end,:).^2))./w_pad;
+    % Does not change the specturm obv.
+    %W_fft0 = sqrt(sum(W_fft(2:end,:).^2))./z_pad;
     %W_fft = W_fft./W_fft0;
 
 end
