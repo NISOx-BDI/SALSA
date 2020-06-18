@@ -198,8 +198,8 @@ function acf_tukey = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask)
         acftmp     = acv./acv(1,:);         
         where2stop = FindBreakPoint(acftmp,ntp);
         
-        disp('# of voxel with flat acf.')
-        sum(where2stop==1)
+%         disp('# of voxel with flat acf.')
+%         sum(where2stop==1)
         
         if tukey_m == -1
             
