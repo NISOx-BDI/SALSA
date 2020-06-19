@@ -122,22 +122,23 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     
     [cbhat,~,~,stat] = myOLS(Y,X,tcon); % not really needed unless for comparison
 
-
     se                   = stat.se;
     tv                   = stat.tval;
     zv                   = stat.zval;
 
-    
     pinvX               = pinv(X); 
     R                   = eye(ntp)-X*pinvX; % residual forming matrix 
     RES                 = R*Y;    
     
-    if ~badjflag; R     = [];  end
+    if ~badjflag 
+        R  = [];  
+    else
+        R  = R*K; % inject the filter into R
+    end
     
     % calc acf, tukey taper, spatially smooth------------------------------
-    if isempty(tukey_m); tukey_m = round(sqrt(ntp)); end
+    if isempty(tukey_m); tukey_m = round(sqrt(ntp)); end    
     
-    R           = R*K; % inject the filter into R
     acf_tukey   = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask);
 
     % make the pwfilter----------------------------------------------------
