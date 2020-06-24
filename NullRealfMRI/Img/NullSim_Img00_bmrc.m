@@ -129,6 +129,11 @@ elseif strcmpi(EDtype,'erf')
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
     EDX = load(path2evs);    
     disp(['Paradigm comes from: ' path2evs])
+elseif strcmpi(EDtype,'ORPE')
+    BCl  = 0;
+    EDX  = GenerateORPE(T,TR,1);
+    nEDX = size(EDX,2);
+    disp('Paradigm was set to be One Regressor Per Event.')    
 end
 disp(['The paradigm is: ' EDtype])
 
@@ -140,8 +145,8 @@ disp(['design updated, ' num2str(size(X,2))])
 tdEDX = EDX;
 tdEDX = tdEDX(1:end-1,:)-tdEDX(2:end,:);
 tdEDx = [tdEDX(1,:); tdEDX];
-
-X   = [EDX tdEDx];
+%
+X     = [X,tdEDx];
 disp(['design updated, ' num2str(size(X,2))])
 % Motion parameters ----------------------------------------
 MCp = load(Path2MC);
@@ -201,6 +206,9 @@ if strcmpi(EDtype,'boxcar')
 elseif strcmpi(EDtype,'er') || strcmpi(EDtype,'erf')
     glmcont([2,3])     = [1 -1];
     disp('+ double tasks contrasted against each other.')
+elseif strcmpi(EDtype,'ORPE')     
+    glmcont([2:nEDX+1]) = ones(1,nEDX);
+    disp(['The contrast is set; # of conditions: ' num2str(sum(glmcont)) ])
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,7 +287,7 @@ elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ACFRegF = 1; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,InputImgStat,path2mask,0,[]);
 elseif strcmpi(pwdmethod,'ACFT0S0') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ACFRegF = 1; 
+    ACFRegF = 0; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,[],[],0,[]);    
 elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
     ACFRegF = 1; 
