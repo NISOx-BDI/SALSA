@@ -125,7 +125,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     se                   = stat.se;
     tv                   = stat.tval;
     zv                   = stat.zval;
-
+    stat                 = []; 
+    
     pinvX               = pinv(X); 
     R                   = eye(ntp)-X*pinvX; % residual forming matrix 
     RES                 = R*Y;    
@@ -133,7 +134,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     if ~badjflag 
         R  = [];  
     else
-        R  = R*K; % inject the filter into R
+        R  = R*K; % inject the filter into R 
+        clear K
     end
     
     % calc acf, tukey taper, spatially smooth------------------------------
@@ -142,10 +144,10 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     acf_tukey   = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask);
 
     % make the pwfilter----------------------------------------------------
-    W_fft       = establish_pwfilter(acf_tukey,ntp);
+    W_fft       = establish_pwfilter(acf_tukey,ntp);   clear acf_tukey;
 
     % Prewhiten the time series--------------------------------------------
-    WY          = prewhiten_timeseries(Y,W_fft);
+    WY          = prewhiten_timeseries(Y,W_fft);        clear Y; 
 
     % Prewhiten the design
     Xnoint      = X(:,2:end); % put aside the intercept when prewhitening the design
@@ -153,7 +155,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
 
     % refit the model to pre-whitened data -------------------------------
     Wcbhat   = zeros(1,nvox);
-    WYhat    = zeros(ntp,nvox); 
+    WYhat    = []; 
     WRES     = zeros(ntp,nvox);
     wse      = zeros(nvox,1); 
     wtv      = zeros(nvox,1);
@@ -166,7 +168,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
         WX      = [ones(ntp,1),WXnoint]; % add back the intercept 
         
         %GLS
-        [Wcbhat(iv),WYhat(:,iv),WRES(:,iv),wstat] = myOLS(WY(:,iv),WX,tcon);
+        [Wcbhat(iv),~,WRES(:,iv),wstat] = myOLS(WY(:,iv),WX,tcon);
 
         wse(iv)  = wstat.se;
         wtv(iv)  = wstat.tval;
@@ -213,7 +215,7 @@ function acf_tukey = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask)
             disp('feat5:: No smoothing is done on the ACF.')
         end           
         
-        where2stop = FindBreakPoint(acftmp,ntp);
+        where2stop = FindBreakPoint(acftmp,ntp); clear acftmp
         
 %         disp('# of voxel with flat acf.')
 %         sum(where2stop==1)
@@ -248,6 +250,7 @@ function acf_tukey = acf_prep(RES,tukey_m,tukey_f,R,ImgStat,path2mask)
     
     acv         = invM*acv(1:tukey_m+1,:); %apply adjustment
     acf         = acv./acv(1,:); % get ACF
+    clear acv
     
     % Spatially Smooth ACF-------------------------------------------------
     if ~isempty(path2mask) || ~isempty(ImgStat)
@@ -295,6 +298,8 @@ function W_fft = establish_pwfilter(acf,ntp)
     acf_kernel(1:tukey_m,:)           = acf;
     acf_kernel((end-tukey_m)+2:end,:) = flip(acf(2:end,:));
     
+    clear acf
+    
     acf_fft                           = real(fft(acf_kernel,[],1));
     W_fft                             = zeros(z_pad, nvox);
     W_fft(2:end,:)                    = 1 ./ sqrt(abs(acf_fft(2:end,:)));
@@ -312,6 +317,9 @@ function WY = prewhiten_timeseries(Y,W_fft)
     ntp   = size(Y,1);
     z_pad = 2.^ceil(log(ntp)/log(2));
     Y_fft = fft(Y,z_pad,1);
+    
+    clear Y
+    
     WY    = real(ifft((W_fft.*real(Y_fft)+W_fft.*imag(Y_fft)*1j),[],1));
     WY    = WY(1:ntp,:);
 end
