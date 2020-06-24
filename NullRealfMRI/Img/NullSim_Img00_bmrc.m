@@ -54,6 +54,14 @@ if strcmpi(COHORT,'ROCKLAND')
     Path2ImgDir = [Path2ImgRaw '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg.nii.gz'];
     WMseg        = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg_2.nii.gz'];
+    
+elseif strcmpi(COHORT,'HCP')
+    %/well/nichols/users/scf915/HCP/R_mpp/sub-105014/ses-REST1_LR/105014_3T_rfMRI_REST1_LR_mpp
+    Path2ImgDir = [Path2ImgRaw '/' SubID '_3T_rfMRI_' SesID '_mpp'];
+    %105014_3T_T1w_MPR1_func_pve_1.nii.gz
+    SEGmaskinEPI = [Path2ImgDir '/seg/' SubID '_3T_T1w_MPR1_func_seg.nii.gz'];
+    WMseg        = [Path2ImgDir '/seg/' SubID '_3T_T1w_MPR1_func_seg_2.nii.gz'];
+    
 elseif any(strcmpi(COHORT,{'Beijing','Cambridge'}))
     Path2ImgDir  = [Path2ImgRaw '/rest_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/mprage_T1_func_seg.nii.gz'];
