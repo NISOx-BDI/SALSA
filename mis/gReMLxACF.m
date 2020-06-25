@@ -53,6 +53,9 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X
 % badjflag [boolean]
 % K is the filter
 % 
+
+    WYhat = []; % this is not very useful and takes ALOT of memory 
+    
     if ~exist('J','var') || isempty(J) ; J = 0; end; 
     disp(['gReMLxACF:: fit the intial naive model.'])
     % This bit naturally comes out of the gReML. But keep it here for now. 
@@ -67,7 +70,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X
         clear X Y
         disp(['gReMLxACF:: fit voxel-wise prewhitening.'])
                                                   % = feat5(Y,X  ,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K)
-        [~,~,~,~,~,~,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K);
+        [~,~,~,~,~,~,Wcbhat,~,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K);
     else exist('WMSeg','var')
         disp('gReMLxACF:: prewhitening is being done on segemnts differently.')
         disp('gReMLxACF:: No ACF smoothing will be done.')
@@ -88,15 +91,15 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X
         
         disp('gReMLxACF:: apply feat5 on the grey matter & CSF')
                                                                     % = feat5(Y,X      ,tcon,tukey_m,tukey_f,[],[],badjflag,K)
-        [~,~,~,~,~,~,Wcbhat_gm,WYhat_gm,WRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,tukey_f,[],[],badjflag,K);
+        [~,~,~,~,~,~,Wcbhat_gm,~,WRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,tukey_f,[],[],badjflag,K);
         
         disp('gReMLxACF:: apply feat5 on the white matter.')
                                                                     % = feat5(Y,X  ,tcon,tukey_m,tukey_f,[],[],badjflag,K)
-        [~,~,~,~,~,~,Wcbhat_wm,WYhat_wm,WRES_wm,wse_wm,wtv_wm,wzv_wm] = feat5(Ywm,X,tcon,tukey_m,tukey_f,[],[],badjflag,K);
+        [~,~,~,~,~,~,Wcbhat_wm,~,WRES_wm,wse_wm,wtv_wm,wzv_wm] = feat5(Ywm,X,tcon,tukey_m,tukey_f,[],[],badjflag,K);
         
         % put back the results together.
         Wcbhat = zeros(nvox,1);
-        WYhat  = zeros(ntp,nvox);
+        %WYhat  = zeros(ntp,nvox);
         WRES   = zeros(ntp,nvox);
         wse    = zeros(nvox,1);
         wtv    = zeros(nvox,1);
@@ -108,7 +111,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X
         wzv(Idx_wm)    = wzv_wm ;    wzv(Idx_gm)     = wzv_gm;
         Wcbhat(Idx_wm) = Wcbhat_wm ; Wcbhat(Idx_gm)  = Wcbhat_gm;
         
-        WYhat(:,Idx_wm) = WYhat_wm ; WYhat(:,Idx_gm) = WYhat_gm ;
+        %WYhat(:,Idx_wm) = WYhat_wm ; WYhat(:,Idx_gm) = WYhat_gm ;
         WRES(:,Idx_wm)  = WRES_wm  ; WRES(:,Idx_gm)  = WRES_gm ;
         
     end
