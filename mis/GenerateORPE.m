@@ -42,7 +42,7 @@ function EDX = GenerateORPE(T,TR,nsub)
                 randomOnsets     = previousOnset + previousActivity + max(randi(maxRest_inTR),minRest_inTR);
                 randomDurations  = max(randi(maxActivity_inTR),minActivity_inTR);
 
-                if randomOnsets > (T-minRest_inTR); continue; end; 
+                if randomOnsets > (T-(minRest_inTR*(3/TR))); continue; end; 
 
                 temp1 = zeros(DinTR,1);
                 for t = 0:(randomDurations-1)
