@@ -96,7 +96,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K)
+function [cbhat,RES,ostat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K)
 % Y      : TxV
 % X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
@@ -125,11 +125,14 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,tco
     se                   = stat.se;
     tv                   = stat.tval;
     zv                   = stat.zval;
-    stat                 = []; 
+    ostat.df             = stat.df; 
+    clear stat
     
     pinvX               = pinv(X); 
     R                   = eye(ntp)-X*pinvX; % residual forming matrix 
-    RES                 = R*Y;    
+    RES                 = R*Y;  
+    
+    clear pinvX
     
     if ~badjflag 
         R  = [];  
