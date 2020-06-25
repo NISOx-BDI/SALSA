@@ -375,11 +375,13 @@ disp('++++++++++++++++++++++++++++++++++++')
 
 % CPS on naive
 %BLUSRES   = BLUSres(Y,X,1:size(X,2)); % temp off, too much exec time. 
-[~,~,cpz] = CPSUnivar(RES,stat.df);
-
-%CPS on whitened residuals
-[~,~,wcpz] = CPSUnivar(WRES,stat.df);
-
+if ~strcmpi(EDtype,'ORPE')
+    [~,~,cpz] = CPSUnivar(RES,stat.df);
+    %CPS on whitened residuals
+    [~,~,wcpz] = CPSUnivar(WRES,stat.df);
+else
+    disp('No CPS is done.')
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SPECTRUM OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -438,11 +440,20 @@ disp('++++++++++++++++++++++++++++++++++++')
 
 if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    VariableList = {'cbhat','se','tv',...
-        'Wcbhat','wse','wtv',...
-        'acl','wacl',...
-        'cpz','wcpz',...
-        'ar1','war1'};
+    if ~strcmpi(EDtype,'ORPE')
+        VariableList = {'cbhat','se','tv',...
+            'Wcbhat','wse','wtv',...
+            'acl','wacl',...
+            'cpz','wcpz',...
+            'ar1','war1'};
+    else
+        VariableList = {'cbhat','se','tv',...
+            'Wcbhat','wse','wtv',...
+            'acl','wacl',...
+            'ar1','war1'};
+        disp('No CPS is done.')
+    end
+    
     OutputImgStat            = InputImgStat.spmV(1);
     OutputImgStat.Removables = InputImgStat.Removables;
 
