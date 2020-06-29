@@ -36,6 +36,7 @@
 % [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 % [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
 % 
+%
 % figure; hold on; grid on; 
 % plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
