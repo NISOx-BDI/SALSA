@@ -38,6 +38,7 @@ SaveMatFileFlag     = 1;
 MParamNum           = 24;
 %gsrflag             = 1;
 %icaclean            = 2;
+TempDerv            = 0;
 
 PATH2AUX='~/bin/FILM2';
 addpath([PATH2AUX '/utils/Trend'])
@@ -149,13 +150,17 @@ X   = EDX;
 
 disp(['design updated, ' num2str(size(X,2))])
 
-%add the temporal derivatives
-tdEDX = EDX;
-tdEDX = tdEDX(1:end-1,:)-tdEDX(2:end,:);
-tdEDx = [tdEDX(1,:); tdEDX];
-%
-X     = [X,tdEDx];
-disp(['design updated, ' num2str(size(X,2))])
+if TempDerv
+    %add the temporal derivatives
+    tdEDX = EDX;
+    tdEDX = tdEDX(1:end-1,:)-tdEDX(2:end,:);
+    tdEDx = [tdEDX(1,:); tdEDX];
+    %
+    X     = [X,tdEDx];
+    disp(['design updated, ' num2str(size(X,2))])
+
+end
+
 % Motion parameters ----------------------------------------
 MCp = load(Path2MC);
 MCp = GenMotionParam(MCp,MParamNum); 
