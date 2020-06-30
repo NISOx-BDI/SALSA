@@ -309,9 +309,29 @@ elseif strcmpi(pwdmethod,'ACFadjT0S0') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif strcmpi(pwdmethod,'ACFadjT0S5') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
     ACFRegF      = 0; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,InputImgStat,path2mask,1,K);   
-    
 
+% --------------------------------------------------------------------------------------
+% ------------------------ Global FEAT -------------------------------------------------     
+    
+elseif strcmpi(pwdmethod,'gACFadjT1S0') % Two stage without tissue segmentation 
+    aclageval = 0; 
+    ACFRegF   = 1;
+    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K);
+    
+% --------------------------------------------------------------------------------------
+% ------------------------ Two Stage Methods: gfeatxfeat -------------------------------    
+
+elseif strcmpi(pwdmethod,'gACFadjxACFadjT1S0') % Two stage without tissue segmentation 
+    ACFRegF   = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,[],[],1,K,[]);  
+
+elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0') % Two stage with knowledge of tissue
+    ACFRegF   = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg);    
+    
+% --------------------------------------------------------------------------------------
 % ------------------------ Two stage Methods: gReML x ACF ------------------------------    
+
 elseif strcmpi(pwdmethod,'gFASTxACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X,TR,glmcont,Mord,InputImgStat,path2mask,1,K);
 elseif strcmpi(pwdmethod,'gFASTxACFadj2t') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    
