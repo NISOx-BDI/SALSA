@@ -53,7 +53,7 @@
 % plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
 
-function [WY,WX,cbhat,RES,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,badjflag,K)
+function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,badjflag,K)
 % Y      : TxV
 % X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
@@ -96,7 +96,9 @@ function [WY,WX,cbhat,RES,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,tcon,
     se                 = stat.se;
     tv                 = stat.tval;
     zv                 = stat.zval;
+    ostat.df             = stat.df; 
     clear stat
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     
