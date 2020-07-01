@@ -96,7 +96,7 @@ function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR
     se                 = stat.se;
     tv                 = stat.tval;
     zv                 = stat.zval;
-    ostat.df             = stat.df; 
+    ostat.df           = stat.df; 
     clear stat
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
