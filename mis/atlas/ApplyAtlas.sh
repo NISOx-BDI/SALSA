@@ -1,15 +1,29 @@
 #bin/bash
 
+function GetAtlas () {
 # Inputs
-SubID=$1
-SesID=$2
+Cohort=$1
+TRs=$2
+SubID=$3
+SesID=$4
 
 roithr=2
 
+TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
+
 AtlasMNI=${HOME}/Home/Atlas/Yeo/Yeo2011_17Networks_FSL_MNI152_2mm.nii.gz
 
-Path2ImgDir=${HOME}/Home/GitClone/FILM2/Externals/ROCKLAND
-ImgDir=${Path2ImgDir}/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-${SesID}_task-rest_acq-645_bold_mpp
+Path2ImgDir=/well/nichols/users/scf915/${Cohort}/R_mpp
+
+if [ $Cohort == ROCKLAND ]; then
+	ImgDir=${Path2ImgDir}/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-${SesID}_task-rest_acq-${TR}_bold_mpp
+elif [ $Cohort == Beijing ]; then
+	ImgDir=${Path2ImgDir}/sub-${SubID}/ses-${SesID}/rest_mpp
+elif [ $Cohort == HCP ]; then
+	ImgDir=${Path2ImgDir}/sub-${SubID}/ses-${SesID}/${SubID}_3T_rfMRI_${SesID}_mpp
+fi
+
+
 RegDir=${ImgDir}/reg
 #---------------------------------------------------------------------------
 warpvol=${ImgDir}/reg/example_func2standard_warp.nii.gz
@@ -37,3 +51,25 @@ ${FSLDIR}/bin/applywarp -i $invol -o $outvol -r $refvol -w $invwarpvol --interp=
 #lthr=$(( roithr-1 ))
 #echo $lthr $uthr
 ${FSLDIR}/bin/fslmaths ${outvol} -thr $roithr -uthr $roithr -bin ${outvol}_$roithr
+
+}
+
+
+############################################################################
+############################################################################
+
+COHORT=$1
+TR=$2
+SesID=$3
+
+TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
+for (( s=1; s<=51; s++ ))
+do
+        SubID=$(cat /well/nichols/users/scf915/${COHORT}/R_mpp/${COHORT}_subid.txt | awk {'print $1'} | sed "${s}q;d")
+
+	GetAtlas $COHORT $TR $SubID $SesID
+
+done
+
+
+
