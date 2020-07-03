@@ -75,6 +75,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gReMLxACF(Y,X
         disp('gReMLxACF:: prewhitening is being done on segemnts differently.')
         disp('gReMLxACF:: No ACF smoothing will be done.')
         
+        
         [ntp,nvox]       = size(Y);
         [~,Idx_wm]       = MaskImg(Y',WMSeg,ImgStat); % Time series in WM 
         Idx_wm           = Idx_wm{1};
