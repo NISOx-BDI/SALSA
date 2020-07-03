@@ -1,6 +1,12 @@
 #bin/bash
 
+
+
+############################################################################
+#FUNCTIONS #################################################################
+
 function GetAtlas () {
+
 # Inputs
 Cohort=$1
 TRs=$2
@@ -9,9 +15,12 @@ SesID=$4
 
 roithr=2
 
+
 TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
 
-AtlasMNI=${HOME}/Home/Atlas/Yeo/Yeo2011_17Networks_FSL_MNI152_2mm.nii.gz
+#echo $TR
+
+AtlasMNI=${HOME}/bin/FILM2/mis/atlas/Yeo2011_17Networks_FSL_MNI152_2mm.nii.gz
 
 Path2ImgDir=/well/nichols/users/scf915/${Cohort}/R_mpp
 
@@ -55,19 +64,22 @@ ${FSLDIR}/bin/fslmaths ${outvol} -thr $roithr -uthr $roithr -bin ${outvol}_$roit
 }
 
 
-############################################################################
+#MAIN ######################################################################
 ############################################################################
 
 COHORT=$1
-TR=$2
+TRs=$2
 SesID=$3
 
-TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
+#TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
+
 for (( s=1; s<=51; s++ ))
 do
-        SubID=$(cat /well/nichols/users/scf915/${COHORT}/R_mpp/${COHORT}_subid.txt | awk {'print $1'} | sed "${s}q;d")
+        SubID=$(cat /well/nichols/users/scf915/${COHORT}/${COHORT}_subid.txt | awk {'print $1'} | sed "${s}q;d")
 
-	GetAtlas $COHORT $TR $SubID $SesID
+	echo $COHORT $TRs $SubID $SesID
+
+	GetAtlas $COHORT $TRs $SubID $SesID
 
 done
 
