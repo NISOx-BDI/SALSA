@@ -30,8 +30,8 @@
 % tcon     = zeros(1,size(X,2));
 % tcon(2)  = 1;
 % 
-% tukey_m   = 30; 
-% tukey_f   = 0; 
+% tukey_m   = -2; 
+% tukey_f   = 1; 
 % J         = 2; 
 % path2mask = []; 
 % 
