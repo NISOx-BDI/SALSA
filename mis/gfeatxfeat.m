@@ -45,7 +45,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,ostat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K,WMSeg)
+function [cbhat,RES,ostat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K,WMSeg,poolflag)
 % Performs two stage prewhitening: 1) FAST 2) ACFadj
 % 
 % tcon should already have the intercept
@@ -70,7 +70,7 @@ function [cbhat,RES,ostat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y
         gtukey_f   = 1;  % use Tukey
         gaclageval = 0;  % Don't use AR basis
         gbadjflag  = 1;  % Do the bias adjustment
-        [WY,WX]                                 = gfeat(Y,X,TR,tcon,gtukey_m,gtukey_f,gaclageval,gbadjflag,K); 
+        [WY,WX]                                 = gfeat(Y,X,TR,tcon,gtukey_m,gtukey_f,gaclageval,gbadjflag,K,poolflag); 
         clear X Y
         disp(['gfeatxfeat:: fit voxel-wise prewhitening. ------------------'])
         [~,~,~,~,~,~,Wcbhat,~,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K);
@@ -97,7 +97,7 @@ function [cbhat,RES,ostat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y
         gtukey_f   = 1;  % use Tukey
         gaclageval = 0;  % Don't use AR basis    
         gbadjflag  = 1;  % Do the bias adjustment
-        [WYgm,WXgm]                                            = gfeat(Ygm,X,TR,tcon,gtukey_m,gtukey_f,gaclageval,gbadjflag,K); 
+        [WYgm,WXgm]                                            = gfeat(Ygm,X,TR,tcon,gtukey_m,gtukey_f,gaclageval,gbadjflag,K,poolflag); 
         
         disp('gfeatxfeat:: apply feat5 on the grey matter & CSF -----------')
         [~,~,~,~,~,~,Wcbhat_gm,~,WRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,tukey_f,[],[],badjflag,K);
