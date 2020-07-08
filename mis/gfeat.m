@@ -41,16 +41,16 @@
 % tcon(2)  = 1;
 % 
 % aclageval = 0; 
-% tukey_m   = -2; 
+% tukey_m   = sqrt(T); 
 % tukey_f   = 1;
-% [WY,WX,cbhat,RES,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat5(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,1,K);
+% [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat5(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,1,K);
 % 
 % [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 % [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
 % 
 % %figure; 
 % hold on; grid on; 
-% plot(PSDx,mean(PSDy,2))
+% %plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
 
 function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,badjflag,K)
@@ -227,7 +227,7 @@ function acf_tukey = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval)
     % Tukey taper
     if tukey_f
         disp(['gfeat:: Tukey regularisation.'])
-        acf1                         = acf1(1:tukey_m,:);
+        acf1                        = acf1(1:tukey_m,:);
         lag                         = 0:tukey_m-1;
         window                      = .5 * (1 + cos(pi .* lag ./ tukey_m));
         acf_tukey                   = acf1 .* repmat(window',1,nvox);
@@ -254,8 +254,8 @@ function W_fft = establish_pwfilter(acf,ntp)
     
     % feat5/featlib.cc  line 127:
     % But why? If we do this, we'll lose the variance in the original signal
-    %W_fft0 = sqrt(sum(W_fft(2:end,:).^2))./w_pad;
-    %W_fft = W_fft./W_fft0;
+    W_fft0 = sqrt(sum(W_fft(2:end,:).^2))./z_pad;
+    W_fft = W_fft./W_fft0;
 
 end
 
