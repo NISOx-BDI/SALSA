@@ -146,15 +146,11 @@ if strcmpi(EDtype,'boxcar')
     EDX = GenerateED(BCl,T,TR,fix(T/15)); 
     EDX = EDX - mean(EDX); 
 elseif strcmpi(EDtype,'er')
-%     BCl = 0;
-%     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-%     EDX = load(path2evs);
-%     disp(['Paradigm comes from: ' path2evs])
     BCl = 10;
     EDX = GenerateER(T,TR,1,BCl);
 elseif strcmpi(EDtype,'erf')
-    BCl = 0;
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
+    BCl = 10;
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '_taskpersec' num2str(BCl) '.txt'];
     EDX = load(path2evs);    
     disp(['Paradigm comes from: ' path2evs])
 elseif strcmpi(EDtype,'ORPE')
@@ -246,26 +242,6 @@ if lFWHM
 end
 
 
-% ii   = randi(size(Yroit,2)); 
-% psfh = figure('position',[50,500,750,600]);
-% hold on; 
-% subplot(3,1,1); hold on; 
-% plot(Yroi(:,ii),'LineWidth',1.3)
-% title({'Raw BOLD Resting-State'})
-% subplot(3,1,2); hold on; 
-% plot(EDX,'LineWidth',1.3); 
-% title({'Task with 10s/task rate'})
-% subplot(3,1,3); hold on; 
-% title(['BOLD signal with induced Task (SNR=' num2str(taskSNR) ')'])
-% plot(faketask(:,ii),'LineWidth',1.3); 
-% plot(Yroit(:,ii),'LineWidth',1.3)
-% legend({'Task',['Resting-State+Task']})
-% xlabel('Time','FontSize',12)
-% ylim([-7 7])
-% set(psfh,'color','w')
-% export_fig(['InducedTasks_' num2str(taskSNR) '.pdf'])
-
-
 % ------------------------------------------------------------------------
 
 % Global Signal -----------------------------------------
@@ -303,6 +279,43 @@ disp(['Detrending: ' TempTreMethod ',param: ' num2str(NumTmpTrend)])
 %
 X           = [X,TempTrend];
 disp(['design updated, ' num2str(size(X,2))])
+
+
+
+% ii   = randi(size(Yroit,2)); 
+% psfh = figure('position',[50,500,750,600]);
+% hold on; 
+% 
+% subplot(4,1,1); hold on; 
+% plot(Yroi(:,ii),'LineWidth',1.3)
+% title({'Raw BOLD Resting-State'})
+% subplot(4,1,2); hold on; 
+% plot(EDX,'LineWidth',1.3); 
+% title({'Task with 10s/task rate'})
+% 
+% subplot(4,1,3); hold on; 
+% title(['BOLD signal with induced Task (SNR=' num2str(taskSNR) ')'])
+% plot(faketask(:,ii),'LineWidth',1.3); 
+% plot(Yroit(:,ii),'LineWidth',1.3)
+% legend({'Task',['Resting-State+Task']})
+% xlabel('Time','FontSize',12)
+% ylim([-7 7])
+% 
+% subplot(4,1,4); hold on; 
+% aa=find(Idx_roi);
+% title(['BOLD signal with induced Task (SNR=' num2str(taskSNR) '), after HPFk'])
+% plot(faketask(:,ii),'LineWidth',1.3); 
+% plot(Y(:,aa(ii)),'LineWidth',1.3)
+% legend({'Task',['Resting-State+Task']})
+% xlabel('Time','FontSize',12)
+% 
+% set(psfh,'color','w')
+% export_fig(['InducedTasks_' num2str(taskSNR) '.pdf'])
+
+
+
+
+
 
 % Centre the design  ----------------------------------
 X           = X - mean(X); % demean everything 
