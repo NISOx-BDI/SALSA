@@ -496,13 +496,16 @@ toc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[pv,pID]      = t2p(tv,stat.df,0.05/2);
+pID            = 0.0001;
+wpID           = 0.0001;
+
+pv      = t2p(tv,stat.df,0.05/2);
 hv            = pv; 
 hv(hv<pID)    = 1;
 hv(hv~=1)     = 0;
 [Sen,Spc,Acc,TP,FP,FN,TN] = SenSpec(hv,Idx_roi);
 
-[wpv,wpID]    = t2p(wtv,stat.df,0.05/2);
+wpv    = t2p(wtv,stat.df,0.05/2);
 whv           = wpv; 
 whv(whv<wpID) = 1;
 whv(whv~=1)   = 0;
