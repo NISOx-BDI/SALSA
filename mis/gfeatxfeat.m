@@ -34,7 +34,7 @@
 % tukey_f   = 1; 
 % path2mask = []; 
 % 
-% [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat5(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,1,K,WMSeg);
+% [cbhat,RES,ostat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat5(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,1,K,WMSeg);
 % 
 % [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
 % [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
@@ -45,7 +45,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K,WMSeg)
+function [cbhat,RES,ostat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K,WMSeg)
 % Performs two stage prewhitening: 1) FAST 2) ACFadj
 % 
 % tcon should already have the intercept
@@ -61,7 +61,9 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,
     se                 = stat.se;
     tv                 = stat.tval;
     zv                 = stat.zval;
-
+    ostat.df           = stat.df; 
+    clear stat
+    
     if ~exist('WMSeg','var') || isempty(WMSeg)
         disp(['gfeatxfeat:: fit gloabl FAST.-------------------------------'])
         gtukey_m   = -2; % choose optimally  
@@ -72,6 +74,7 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,
         clear X Y
         disp(['gfeatxfeat:: fit voxel-wise prewhitening. ------------------'])
         [~,~,~,~,~,~,Wcbhat,~,WRES,wse,wtv,wzv] = feat5(WY,WX,tcon,tukey_m,tukey_f,ImgStat,path2mask,badjflag,K);
+        
     else exist('WMSeg','var')
         disp('gfeatxfeat:: prewhitening is being done on segemnts differently.')
         disp('gfeatxfeat:: No ACF smoothing will be done.')
@@ -83,6 +86,8 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,
         Ywm              = Y(:,Idx_wm); 
         Idx_gm           = ~Idx_wm;
         Ygm              = Y(:,Idx_gm); % time series in GM & CSF
+        
+        clear Y
         
         disp(['gfeatxfeat:: total # of voxels: ' num2str(nvox)])
         disp(['gfeatxfeat:: # of GM voxels: ' num2str(sum(Idx_gm)) ', # of WM voxels: ' num2str(sum(Idx_wm))])
@@ -97,8 +102,12 @@ function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,
         disp('gfeatxfeat:: apply feat5 on the grey matter & CSF -----------')
         [~,~,~,~,~,~,Wcbhat_gm,~,WRES_gm,wse_gm,wtv_gm,wzv_gm] = feat5(WYgm,WXgm,tcon,tukey_m,tukey_f,[],[],badjflag,K);
         
+        clear WYgm WXgm
+         
         disp('gfeatxfeat:: apply feat5 on the white matter  ---------------')
         [~,~,~,~,~,~,Wcbhat_wm,~,WRES_wm,wse_wm,wtv_wm,wzv_wm] = feat5(Ywm,X,tcon,tukey_m,tukey_f,[],[],badjflag,K);
+        
+        clear Ywm
         
         % put back the results together.
         Wcbhat = zeros(nvox,1);
