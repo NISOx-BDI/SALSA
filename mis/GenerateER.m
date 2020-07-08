@@ -1,17 +1,25 @@
-% clear
-% 
-% CohortID           = 'ROCKLAND';
-% nsub               = 1;
-% NumTask            = 1; 
-% 
-% addpath('/Users/sorooshafyouni/Home/matlab/spm12') 
-% 
-% T                  = 900;
-% TR                 = 0.645;
-% 
-% EDX = GenerateORPE(T,TR,1); 
+clear
 
-function EDX = GenerateER(T,TR,nsub,TaskRate)
+CohortID           = 'ROCKLAND';
+nsub               = 1;
+NumTask            = 1; 
+
+addpath('/Users/sorooshafyouni/Home/matlab/spm12') 
+
+T                  = 404;
+TR                 = 1.4;
+BCl                = 10;
+
+EDX = GenerateER0(T,TR,1,BCl,0); 
+
+path2saveEVs = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
+filename=[path2saveEVs '/' CohortID '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '_taskpersec' num2str(BCl) '.txt'];
+fileID = fopen(filename,'w');
+fprintf(fileID,'%f\n',[EDX]');
+fclose(fileID);
+
+
+function EDX = GenerateER0(T,TR,nsub,TaskRate,FixedFlag)
 
     if ~exist('TaskRate','var'); TaskRate=5; end; 
         
@@ -21,16 +29,23 @@ function EDX = GenerateER(T,TR,nsub,TaskRate)
 
     numEvents         = round(DinSec/TaskRate); % Keeping the rate as an event every 5seconds
 
-    minRest_inSec     = TaskRate/2; 
-    maxRest_inSec     = TaskRate*2; 
-
+    if ~FixedFlag
+        minRest_inSec     = TaskRate/2; 
+        maxRest_inSec     = TaskRate*2; 
+    else
+        minRest_inSec     = TaskRate;
+        maxRest_inSec     = TaskRate;
+    end
+    
     minActivity_inSec = 1;
     maxActivity_inSec = 1;
 
     minRest_inTR      = fix(minRest_inSec/TR);
     maxRest_inTR      = fix(maxRest_inSec/TR);
-    minActivity_inTR  = fix(minActivity_inSec/TR);
-    maxActivity_inTR  = fix(maxActivity_inSec/TR);
+    
+    
+    minActivity_inTR  = max(fix(minActivity_inSec/TR),1);
+    maxActivity_inTR  = max(fix(maxActivity_inSec/TR),1);
 
     for sub_cnt = 1:nsub
 
@@ -38,10 +53,18 @@ function EDX = GenerateER(T,TR,nsub,TaskRate)
         previousActivity = 0;
         temp1 = zeros(DinTR,1);
         
-        for event = 1:(numEvents)
-
-                randomOnsets     = previousOnset + previousActivity + max(randi(maxRest_inTR),minRest_inTR);
-                randomDurations  = max(randi(maxActivity_inTR),minActivity_inTR);
+        for event = 1:numEvents
+                
+                if ~FixedFlag
+                    EventRestinTR     = randi(maxRest_inTR);
+                    EventActivityinTR = randi(maxActivity_inTR);
+                else
+                    EventRestinTR     = maxRest_inTR;
+                    EventActivityinTR = maxActivity_inTR; 
+                end
+            
+                randomOnsets     = previousOnset + previousActivity + max(EventRestinTR,minRest_inTR);
+                randomDurations  = max(EventActivityinTR,minActivity_inTR);
 
                 if randomOnsets > (T-(minRest_inTR*(3/TR))); continue; end; 
 
