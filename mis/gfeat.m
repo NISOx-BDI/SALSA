@@ -1,60 +1,60 @@
-ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
-tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
-dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
-path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
-parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
-WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
-%feat5/featlib.cc 
+% ts_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/filtered_func_data.nii.gz';
+% tcon_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design.con';
+% dmat_fname='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/design_mat.txt';
+% path2mask='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mask.nii.gz';
+% parmat='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/mc/prefiltered_func_data_mcf.par';
+% WMSeg='/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/FeatTest/sub-A00008326++++.feat/reg/func_wmseg.nii.gz';
+% %feat5/featlib.cc 
+% 
+% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
+% addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/utils/Trend')
+% addpath('/Users/sorooshafyouni/Home/matlab/spm12')
+% 
+% [Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
+% Y = Y';
+% Y = Y - mean(Y);
+% 
+% % [~,Idx_wm]       = MaskImg(Y',WMSeg,ImgStat); 
+% % Idx_wm           = Idx_wm{1};
+% % Ywm              = Y(:,Idx_wm); 
+% % Idx_gm           = ~Idx_wm;
+% % Y                = Y(:,Idx_gm); % time series in GM & CSF
+% % Y                = Y - mean(Y);
+% 
+% %%Y                = Y(:,1:20:end); 
+% %%size(Y)
+% 
+% T=900;
+% TR=0.645;
+% disp('MC params.')
+% MCp      = load(parmat); 
+% MCp      = GenMotionParam(MCp,24); 
+% X        = [load(dmat_fname) MCp];
+% 
+% disp('hpf')
+% K = hp_fsl(size(Y,1),100,0.645);    
+% X = K*X;    % high pass filter the design
+% Y = K*Y;  % high pass filter the data
+% 
+% X        = [ones(T,1) X];
+% tcon     = zeros(1,size(X,2));
+% tcon(2)  = 1;
+% 
+% aclageval = 0; 
+% tukey_m   = sqrt(T); 
+% tukey_f   = 1;
+% poolflag  = 0; 
+% [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat5(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,1,K,poolflag);
+% 
+% [PSDx,PSDy]   = DrawMeSpectrum(RES,1);
+% [WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
+% 
+% %figure; 
+% hold on; grid on; 
+% %plot(PSDx,mean(PSDy,2))
+% plot(WPSDx,mean(WPSDy,2))
 
-addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/mis')
-addpath('/Users/sorooshafyouni/Home/GitClone/FILM2/utils/Trend')
-addpath('/Users/sorooshafyouni/Home/matlab/spm12')
-
-[Y,ImgStat] = CleanNIFTI_spm(ts_fname,'demean');
-Y = Y';
-Y = Y - mean(Y);
-
-% [~,Idx_wm]       = MaskImg(Y',WMSeg,ImgStat); 
-% Idx_wm           = Idx_wm{1};
-% Ywm              = Y(:,Idx_wm); 
-% Idx_gm           = ~Idx_wm;
-% Y                = Y(:,Idx_gm); % time series in GM & CSF
-% Y                = Y - mean(Y);
-
-%%Y                = Y(:,1:20:end); 
-%%size(Y)
-
-T=900;
-TR=0.645;
-disp('MC params.')
-MCp      = load(parmat); 
-MCp      = GenMotionParam(MCp,24); 
-X        = [load(dmat_fname) MCp];
-
-disp('hpf')
-K = hp_fsl(size(Y,1),100,0.645);    
-X = K*X;    % high pass filter the design
-Y = K*Y;  % high pass filter the data
-
-X        = [ones(T,1) X];
-tcon     = zeros(1,size(X,2));
-tcon(2)  = 1;
-
-aclageval = 0; 
-tukey_m   = sqrt(T); 
-tukey_f   = 1;
-poolflag  = 0; 
-[WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat5(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,1,K,poolflag);
-
-[PSDx,PSDy]   = DrawMeSpectrum(RES,1);
-[WPSDx,WPSDy] = DrawMeSpectrum(WRES,1);
-
-%figure; 
-hold on; grid on; 
-%plot(PSDx,mean(PSDy,2))
-plot(WPSDx,mean(WPSDy,2))
-
-function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat5(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,badjflag,K,poolflag)
+function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,badjflag,K,poolflag)
 % Y      : TxV
 % X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
