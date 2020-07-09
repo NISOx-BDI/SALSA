@@ -442,7 +442,12 @@ elseif strcmpi(pwdmethod,'gACFadjT1S0') % Two stage without tissue segmentation
     ACFRegF   = 1;
     poolflag  = 1;
     [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);
-    
+
+elseif strcmpi(pwdmethod,'gACFadjT1S0P0') % Two stage without tissue segmentation 
+    aclageval = 0; 
+    ACFRegF   = 1;
+    poolflag  = 0;
+    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);    
 % --------------------------------------------------------------------------------------
 % ------------------------ Two Stage Methods: gfeatxfeat -------------------------------    
 
@@ -453,8 +458,12 @@ elseif strcmpi(pwdmethod,'gACFadjxACFadjT1S0') % Two stage without tissue segmen
 
 elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0') % Two stage with knowledge of tissue
     ACFRegF   = 1; 
-    poolflag  = []; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);    
+    poolflag  = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);   
+elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P0') % Two stage with knowledge of tissue
+    ACFRegF   = 1; 
+    poolflag  = 0; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);         
     
 % --------------------------------------------------------------------------------------
 % ------------------------ Two stage Methods: gReML x ACF ------------------------------    
