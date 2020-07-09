@@ -1,10 +1,15 @@
+*.bkp
 *.mat
+*.sh~
+*.m~
 *.nii.gz
 *.nii
 **/logs
 **/R
 **/S
 *.png
+*.txt
+**_Submitters
 fmristat
 fMRI_temporal_autocorrelation-master
 Externals

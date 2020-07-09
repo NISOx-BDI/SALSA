@@ -82,7 +82,7 @@ SubID=\$(cat ${COHORTDIR}/participants.tsv | awk {'print \$1'} | sed "\${SGE_TAS
 
 OCTSCRPT=\${HOME}/bin/FILM2/NullRealfMRI/Img
 cd \${OCTSCRPT}
-octave -q --eval "COHORTDIR=\"${COHORTDIR}\"; Path2ImgResults=\"${Path2ImgResults}\"; pwdmethod=\"${METH_ID}\"; lFWHM=${FWHMsize}; TR=${TRs}; Mord=${ARO}; MPparamNum=${MAO}; TempTreMethod=\"${TempTreMethod}\"; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc; quit"
+octave -q --eval "COHORT=\"${COHORT}\" ;COHORTDIR=\"${COHORTDIR}\"; Path2ImgResults=\"${Path2ImgResults}\"; pwdmethod=\"${METH_ID}\"; lFWHM=${FWHMsize}; TR=${TRs}; Mord=${ARO}; MPparamNum=${MAO}; TempTreMethod=\"${TempTreMethod}\"; SubID=\"\${SubID}\"; SesID=\"${SesID}\"; NullSim_Img_bmrc; quit"
 
 # The stat file
 echo 1 > \$STATFILE

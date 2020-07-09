@@ -2,8 +2,8 @@
 warning('off','all')
 disp(['RANDN SEED CHECK:' num2str(randn(1))])
 
-SubID     = 'A00028858';
-SesID     = 'DS2'; 
+%SubID     = 'A00028858';
+%SesID     = 'DS2'; 
 
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
@@ -14,6 +14,7 @@ disp(['TR: ' num2str(TR)])
 disp(['ARmethod: ' pwdmethod])
 disp(['AR order:' num2str(Mord)])
 disp(['MA order: ' num2str(MPparamNum)])
+disp(['Detrending methods: ' TempTreMethod])
 disp(['lFWHM: ' num2str(lFWHM)])
 disp(['COHORT directory:' COHORTDIR])
 disp(['Path 2 Results: ' Path2ImgResults ])
