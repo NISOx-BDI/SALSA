@@ -48,25 +48,45 @@ addpath([PATH2AUX '/mis'])
 addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'));
 %addpath('/well/nichols/users/scf915/externals/spm12')
 
+
+
+
+
+
+
 disp('=====SET UP PATHS =============================')
-%Raw Images (MMP feat output)
-Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
+
 if strcmpi(COHORT,'ROCKLAND')
+    Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg.nii.gz'];
     WMseg        = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg_2.nii.gz'];
+    path2mask    = [Path2ImgDir '/mask.nii.gz']; 
+    Path2MC      = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
     
 elseif strcmpi(COHORT,'HCP')
-    %/well/nichols/users/scf915/HCP/R_mpp/sub-105014/ses-REST1_LR/105014_3T_rfMRI_REST1_LR_mpp
+    Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/' SubID '_3T_rfMRI_' SesID '_mpp'];
-    %105014_3T_T1w_MPR1_func_pve_1.nii.gz
     SEGmaskinEPI = [Path2ImgDir '/seg/' SubID '_3T_T1w_MPR1_func_seg.nii.gz'];
     WMseg        = [Path2ImgDir '/seg/' SubID '_3T_T1w_MPR1_func_seg_2.nii.gz'];
+    path2mask    = [Path2ImgDir '/mask.nii.gz']; 
+    Path2MC      = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
     
 elseif any(strcmpi(COHORT,{'Beijing','Cambridge'}))
+    Path2ImgRaw  = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir  = [Path2ImgRaw '/rest_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/mprage_T1_func_seg.nii.gz'];
     WMseg        = [Path2ImgDir '/seg/mprage_T1_func_seg_2.nii.gz'];
+    path2mask    = [Path2ImgDir '/mask.nii.gz']; 
+    Path2MC      = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
+    
+elseif strcmpi(COHORT,'NEO')
+    Path2ImgRaw  = [COHORTDIR   '/sub-' SubID '/ses-' SesID];
+    Path2ImgDir  = Path2ImgRaw;
+    SEGmaskinEPI = [Path2ImgDir '/fix/func_dseg_seg.nii.gz'];
+    WMseg        = [Path2ImgDir '/fix/func_dseg_wm.nii.gz']; 
+    path2mask    = [Path2ImgDir '/fix/func_dseg_mask.nii.gz']; 
+    Path2MC      = [Path2ImgDir '/mcdc/func_mcdc.eddy_parameters'];    
 end
 
 
@@ -75,19 +95,29 @@ if lFWHM
     fwhmlab=['_fwhm' num2str(lFWHM)];
 end
 
-if ~icaclean
-    icalab = 'off';
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet' fwhmlab '.nii.gz'];
-elseif icaclean==1
-    icalab = 'nonaggr';
-    Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
-elseif icaclean==2
-    icalab = 'aggr';
-    Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
+if any(strcmpi(COHORT,{'Beijing','Cambridge','HCP','ROCKLAND'}))
+    if ~icaclean
+        icalab = 'off';
+        Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet' fwhmlab '.nii.gz'];
+    elseif icaclean==1
+        icalab = 'nonaggr';
+        Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
+    elseif icaclean==2
+        icalab = 'aggr';
+        Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
+    end
+elseif strcmpi(COHORT,'NEO')
+    if ~icaclean
+        icalab = 'off';
+        Path2Img    = [Path2ImgDir '/mcdc/func_mcdc_masked_brain' fwhmlab '.nii.gz'];
+    elseif icaclean==1
+        icalab = 'nonaggr';
+        Path2Img    = [Path2ImgDir '/fix/func_fix_masked_brain' fwhmlab '.nii.gz'];
+    end
+    
+else
+    disp('XXXX UNRECOGNISED DATASET XXXX')
 end
-
-path2mask = [Path2ImgDir '/mask.nii.gz']; 
-Path2MC   = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
 disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
@@ -114,6 +144,11 @@ Vorig = InputImgStat.CleanedDim(1);
 V     = Vorig;
 
 if size(Y,1)~=T; Y = Y'; end; %TxV
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN MATRIX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,19 +356,47 @@ elseif strcmpi(pwdmethod,'ACFadjT0S5') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif strcmpi(pwdmethod,'gACFadjT1S0') % Two stage without tissue segmentation 
     aclageval = 0; 
     ACFRegF   = 1;
-    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K);
+    poolflag  = 1;
+    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);
+
+elseif strcmpi(pwdmethod,'gACFadjT1S0P0') % Two stage without tissue segmentation 
+    aclageval = 0; 
+    ACFRegF   = 1;
+    poolflag  = 0;
+    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);    
+    
+elseif strcmpi(pwdmethod,'gACFadjT1S0P10') % Two stage without tissue segmentation 
+    aclageval = 0; 
+    ACFRegF   = 1;
+    poolflag  = 10;
+    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);     
     
 % --------------------------------------------------------------------------------------
 % ------------------------ Two Stage Methods: gfeatxfeat -------------------------------    
 
 elseif strcmpi(pwdmethod,'gACFadjxACFadjT1S0') % Two stage without tissue segmentation 
-    ACFRegF   = 1; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,[],[],1,K,[]);  
+    ACFRegF   = 1;
+    poolflag  = [];
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,[],[],1,K,[],poolflag);  
 
 elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0') % Two stage with knowledge of tissue
     ACFRegF   = 1; 
-    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg);    
+    poolflag  = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);   
+elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P0') % Two stage with knowledge of tissue
+    ACFRegF   = 1; 
+    poolflag  = 0; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);  
     
+elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P10') % Two stage with knowledge of tissue
+    ACFRegF   = 1; 
+    poolflag  = 10; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gsfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);   
+elseif strcmpi(pwdmethod,'gACFadjxACFadjT1S0P10') % Two stage with knowledge of tissue
+    ACFRegF   = 1; 
+    poolflag  = 10; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gsfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,[],poolflag);      
+
 % --------------------------------------------------------------------------------------
 % ------------------------ Two stage Methods: gReML x ACF ------------------------------    
 elseif strcmpi(pwdmethod,'gFASTxACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%    

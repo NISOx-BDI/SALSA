@@ -1,7 +1,7 @@
     
-T    = 100; % length of time series
+T    = 50; % length of time series
 TR   = 1; % dummy TR
-p    = 10; % order of model
+p    = 3; % order of model
 
 %% a dummy design
 EV1     = randn(T,1);
@@ -35,7 +35,7 @@ for l=1:(p+1)
     Dl = diag(ones(1,T-l+1),l-1); % upper triangle
    for j=1:(p+1)
         Dj = (diag(ones(1,T-j+1),j-1)+diag(ones(1,T-j+1),-j+1))/(1+(j==1));
-        M1(l,j) = trace(R*Dl*R*Dj);
+        M1(l,j) = trace(R*Dl*R'*Dj);
    end
 end
 
@@ -44,11 +44,20 @@ end
 %% Filter K was added into the M
 
 RK  = R*K;
-RKt = RK';
+for i=1:(p+1)
+    Di = (diag(ones(1,T-i+1),i-1)+diag(ones(1,T-i+1),-i+1))/(1+(i==1)); %symmetric selector
+   for j=1:(p+1)
+        Dj = (diag(ones(1,T-j+1),j-1)+diag(ones(1,T-j+1),-j+1))/(1+(j==1));
+        MK0(i,j) = trace(RK'*Di*RK*Dj)/(1+(i>1));
+   end
+end
+
+
+RK  = R*K;
 for l=1:(p+1)
     Dl = diag(ones(1,T-l+1),l-1); % upper triangle
    for j=1:(p+1)
         Dj = (diag(ones(1,T-j+1),j-1)+diag(ones(1,T-j+1),-j+1))/(1+(j==1));
-        MK(l,j) = trace(RK*Dl*RKt*Dj);
+        MK1(l,j) = trace(RK'*Dl*RK*Dj);
    end
 end

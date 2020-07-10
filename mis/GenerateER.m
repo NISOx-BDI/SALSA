@@ -1,28 +1,29 @@
-clear
+% clear
+% 
+% CohortID           = 'ROCKLAND';
+% nsub               = 1;
+% NumTask            = 1; 
+% 
+% addpath('/Users/sorooshafyouni/Home/matlab/spm12') 
+% 
+% T                  = 404;
+% TR                 = 1.4;
+% BCl                = 10;
+% 
+% EDX = GenerateER0(T,TR,1,BCl,0); 
+% 
+% path2saveEVs = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
+% filename=[path2saveEVs '/' CohortID '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '_taskpersec' num2str(BCl) '.txt'];
+% fileID = fopen(filename,'w');
+% fprintf(fileID,'%f\n',[EDX]');
+% fclose(fileID);
 
-CohortID           = 'ROCKLAND';
-nsub               = 1;
-NumTask            = 1; 
 
-addpath('/Users/sorooshafyouni/Home/matlab/spm12') 
+function EDX = GenerateER(T,TR,nsub,TaskRate,FixedFlag)
 
-T                  = 404;
-TR                 = 1.4;
-BCl                = 10;
-
-EDX = GenerateER0(T,TR,1,BCl,0); 
-
-path2saveEVs = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
-filename=[path2saveEVs '/' CohortID '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '_taskpersec' num2str(BCl) '.txt'];
-fileID = fopen(filename,'w');
-fprintf(fileID,'%f\n',[EDX]');
-fclose(fileID);
-
-
-function EDX = GenerateER0(T,TR,nsub,TaskRate,FixedFlag)
-
-    if ~exist('TaskRate','var'); TaskRate=5; end; 
-        
+    if ~exist('TaskRate','var');  TaskRate=5; end; 
+    if ~exist('FixedFlag','var'); FixedFlag=0; end; 
+    
     DinSec            = round(T*TR);
     DinTR             = T;
     hrf               = spm_hrf(TR);

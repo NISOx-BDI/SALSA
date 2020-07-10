@@ -1,17 +1,19 @@
 clear; 
-%warning('on','all')
+warning('off','all')
 
+COHORT = 'ROCKLAND'; 
+COHORTDIR = '/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/ROCKLAND/';
 pwdmethod = 'ACFadj'; %ACF AR-YW AR-W ARMAHR
 Mord      = 30; 
-lFWHM     = 0;
-SubID     = 'A00008399';
+lFWHM     = 5;
+SubID     = 'A00028858';
 SesID     = 'DS2'; 
 TR        = 0.645;
-
+EDtype    = 'ER'; % boxcar
 %TempTreMethod = 'spline'; 
 %NumTmpTrend   = 3;
 
-TempTreMethod = 'poly'; 
+TempTreMethod = 'hpf'; 
 NumTmpTrend   = [];
 
 
@@ -25,12 +27,16 @@ disp(['AR order:' num2str(Mord)])
 disp(['lFWHM: ' num2str(lFWHM)])
 %disp(['COHORT directory:' COHORTDIR])
 
+
+
+
+
 SaveImagesFlag      = 1; 
 SaveMatFileFlag     = 1; 
 DoDetrendingPrior   = 0; 
 MParamNum           = 24;
 gsrflag             = 1;
-icaclean            = 2;
+icaclean            = 0;
 
 disp('=======================================')
 
@@ -44,15 +50,31 @@ addpath([PATH2AUX '/mis'])
 
 disp('=====SET UP PATHS =============================')
 %Raw Images (MMP feat output)
+%Raw Images (MMP feat output)
+Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
+if strcmpi(COHORT,'ROCKLAND')
+    Path2ImgDir = [Path2ImgRaw '/sub-' SubID '_ses-' SesID '_task-rest_acq-' num2str(TR*1000) '_bold_mpp'];
+elseif any(strcmpi(COHORT,{'Beijing','Cambridge'}))
+    Path2ImgDir = [Path2ImgRaw '/rest_mpp'];
+end
+
 Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
-%Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_test/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
 Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/ROCKLAND/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
+
+fwhmlab='';
+if lFWHM
+    fwhmlab=['_fwhm' num2str(lFWHM)];
+end
+
 if ~icaclean
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet.nii.gz'];
+    icalab = 'off';
+    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet' fwhmlab '.nii.gz'];
 elseif icaclean==1
-    Path2Img    = [Path2ImgDir '/ica-aroma/denoised_func_data_nonaggr.nii.gz'];
+    icalab = 'nonaggr';
+    Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
 elseif icaclean==2
-    Path2Img    = [Path2ImgDir '/ica-aroma/denoised_func_data_nonaggr.nii.gz'];
+    icalab = 'aggr';
+    Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
 end
 
 Path2MC  = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
@@ -70,27 +92,31 @@ end
 disp(['Output stuff: ' Path2ImgResults])
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
+disp('=====LOAD THE IMAGE ===========================')
+
 % ----------------------------------------------
+% one day this bit should be moved into the CleanNIFTI_spm.m
+% CLK	 = fix(clock);
+% tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
+% mkdir(tmpdir)
+% disp(['Unzip into: ' tmpdir ])
+% randtempfilename=[tmpdir '/prefilt_tmp_' SubID '_' num2str(randi(50)) num2str(CLK(end)+randi(10)) '.nii'];
+% system(['gunzip -c ' Path2Img ' > ' randtempfilename]); %gunzip function in Octave deletes the source file in my version!
 
-CLK	 = fix(clock);
-tmpdir  = [tempdir 'octspm12/tmp_' num2str(randi(5000)) '_' num2str(CLK(end))]; % make a temp directory 
-mkdir(tmpdir)
-disp(['Unzip into: ' tmpdir ])
-randtempfilename=[tmpdir '/prefilt_tmp_' SubID '_' num2str(randi(50)) num2str(CLK(end)+randi(10)) '.nii'];
-system(['gunzip -c ' Path2Img ' > ' randtempfilename]); %gunzip function in Octave deletes the source file in my version!
+[Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean');
 
-[Y,InputImgStat]=CleanNIFTI_spm(randtempfilename,'demean','fwhm',lFWHM);
+% disp(['Remove the temp directory: ' tmpdir])
+% %rmdir(tmpdir,'s')
+% system(['rm -rf ' tmpdir])
 
-disp(['Remove the temp directory: ' tmpdir])
-%rmdir(tmpdir,'s')
-system(['rm -rf ' tmpdir])
+
+
 %-----------------------------------------------
 
-T = InputImgStat.CleanedDim(2);
-TR = InputImgStat.voxelsize(4);
+T     = InputImgStat.CleanedDim(2);
+TR    = InputImgStat.voxelsize(4);
 Vorig = InputImgStat.CleanedDim(1);
 V = Vorig;
-
 
 if size(Y,1)~=T; Y = Y'; end; %TxV
 
@@ -117,13 +143,20 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('++++++++++++ Construct a design matrix')
 %%% Generate a Design Matrix --------------------------------
-EDtype = 'boxcar'; 
-BCl = 20;
-EDX = GenerateED(BCl,T,TR); 
-EDX = EDX - mean(EDX); 
+
+if strcmpi(EDtype,'boxcar')
+    BCl = 20;
+    EDX = GenerateED(BCl,T,TR); 
+    EDX = EDX - mean(EDX); 
+    Xc  = 1; % where is the experimental design?
+elseif strcmpi(EDtype,'er')
+    BCl = 0;
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
+    EDX = load(path2evs);
+end
+disp(['The paradigm is: ' EDtype])
 
 X   = EDX;
-Xc  = 1; % where is the experimental design?
 
 disp(['design updated, ' num2str(size(X,2))])
 % Motion parameters ----------------------------------------
@@ -212,8 +245,8 @@ end
 disp('++++++++++++Fit data to the Naive model.')
 X0                                          = [ones(T,1),X];
 glmcont                                     = zeros(1,size(X0,2));
-glmcont(Xc+1)                               = 1;
-[Bhat_Naive,~,resNaive,Stat_Naive_SE_tmp]   = myOLS(dY,X0);
+glmcont([2,3])                              = [1 -1];
+[Bhat_Naive,~,resNaive,Stat_Naive_SE_tmp]   = myOLS(dY,X0,glmcont);
 SE_Naive                                    = Stat_Naive_SE_tmp.se;
 tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
 [~,CPSstat_Naive,CPZ_Naive]                 = CPSUnivar(resNaive,X0);
@@ -224,11 +257,19 @@ tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
 
 %%% ACFs %%%%%%%%%%%%%%%
 disp(['++++++++++++Calculate the autocorrelation coefficients.'])
-%residY          = residY-mean(residY); 
+%residY         = residY-mean(residY); 
 residY          = residY-repmat(mean(residY),T,1);
 [~,~,dRESacov]  = AC_fft(residY,T); % Autocovariance; VxT
+
+if ACFadjflag || ACFflag
+    disp('Will be running SUSAN on the autocovariances.')
+    %dRESacov    = ApplyFSLSusan(dRESacov,5,InputImgStat,[Path2ImgDir '/mask.nii.gz']);
+    dRESacov    = ApplyFSLSmoothing(dRESacov,5,InputImgStat,[Path2ImgDir '/mask.nii.gz']);
+end
+
 dRESacov        = dRESacov'; %TxV
-dRESacorr       = dRESacov./sum(abs(residY).^2); % Autocorrelation
+dRESacorr       = dRESacov./dRESacov(1,:);
+%dRESacorr       = dRESacov./sum(abs(residY).^2); % Autocorrelation
 ACL             = sum(dRESacorr.^2); % Autocorrelation Length
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -314,6 +355,8 @@ disp('++++++++++++Calculate the spectrum of the residuals.')
 [dpwRESXp,dpwRESYp] = DrawMeSpectrum(dpwRES,TR,0);
 dpwRESYp            = mean(dpwRESYp,2); % average across voxels
 
+%clear dpwRES
+
 [resNaiveSXp,resNaiveYp] = DrawMeSpectrum(resNaive,TR,0);
 resNaiveYp               = mean(resNaiveYp,2); % average across voxels
 
@@ -334,11 +377,11 @@ if SaveImagesFlag
 
     for vname = VariableList
 
-        tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.nii'];
+        tmpvar     = eval(vname{1});
+        fname      = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.nii'];
 
-        CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
-        system(['gzip ' OutputImgStat.fname]);
+        CleanNIFTI_spm(tmpvar,'ImgInfo',InputImgStat.spmV,'DestDir',fname,'removables',InputImgStat.Removables);
+        %system(['gzip ' fname]);
     end
 end
 
@@ -367,3 +410,4 @@ if SaveMatFileFlag
     save(MatFileName,'GLM','SPEC','PW')
 end
 
+disp('xxDONExx')

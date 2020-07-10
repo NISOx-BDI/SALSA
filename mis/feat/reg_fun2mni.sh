@@ -27,7 +27,7 @@ echo "HighRes : ${HEADIMG}"
 echo "Reg dir : ${REGDIR}"
 echo ""
 
-/bin/mkdir -p ${REGDIR}
+mkdir -p ${REGDIR}
 
 cd ${REGDIR}
 

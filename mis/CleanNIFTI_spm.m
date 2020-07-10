@@ -206,10 +206,15 @@ if ~SaveFlag
         mask    = reshape(mask,[1,prod(maskdim)]);
         Removables = find(mask==0);
     elseif isempty(Path2Mask)
-        if verbose; disp(['-Any time series which is either nan or variance zero is removed.']); end
+        
         nan_idx    = find(isnan(sum(Y,2)));
-        %zeros_idx  = find(sum(abs(Y),2) < (eps*10e5) ); %find(sum(Y,2)==0);
-        zeros_idx  = find(var(Y,0,2)==0);
+        if T0==1
+            if verbose; disp(['-Any time series which is either nan or sum zero is removed.']); end
+            zeros_idx  = find(sum(abs(Y),2) < (eps*10e5) ); %find(sum(Y,2)==0);
+        else
+            if verbose; disp(['-Any time series which is either nan or variance zero is removed.']); end
+            zeros_idx  = find(var(Y,0,2)==0);
+        end
         Removables = [nan_idx;zeros_idx];
     end
         

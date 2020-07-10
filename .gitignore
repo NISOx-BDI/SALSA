@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 **/NullRealfMRI/Img/FPR
 *.m~
+=======
+*.bkp
+>>>>>>> 639c9e215d7250033be94da1dea9681a0d6102ad
 *.mat
+*.sh~
+*.m~
 *.nii.gz
 *.nii
 *.html
@@ -10,11 +16,16 @@
 **/R
 **/S
 *.png
+<<<<<<< HEAD
 **.feat
 *.pdf
 **.pdf
 FeatTest
 ExampleData
+=======
+*.txt
+**_Submitters
+>>>>>>> 639c9e215d7250033be94da1dea9681a0d6102ad
 fmristat
 fMRI_temporal_autocorrelation-master
 Externals

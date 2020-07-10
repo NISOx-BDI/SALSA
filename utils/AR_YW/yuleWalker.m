@@ -54,5 +54,6 @@ end
 %get parameters
 arParam = (covMat\gamma(2:end))';
 
+
 %get standard deviation of white noise
 noiseSigma = sqrt(gamma(1)-arParam*gamma(2:end));

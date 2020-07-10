@@ -1,6 +1,7 @@
 
 function [CPS,stat,CPZ] = tCPSUnivar(Resid,X)
 
+
 nScan = size(Resid,1);
 nVar = rank(X);
 nVox = 1; 

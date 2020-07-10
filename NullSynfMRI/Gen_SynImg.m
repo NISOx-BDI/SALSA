@@ -1,13 +1,13 @@
 clear; warning('off','all')
 
-pwdmethod = 'AR-W'; %ACF AR-YW AR-W ARMAHR
-Mord      = 5; 
+pwdmethod = 'ACF'; %ACF AR-YW AR-W ARMAHR
+Mord      = 30; 
 lFWHM     = 0;
-SubID     = 'A00028185';
+SubID     = 'A00028858';
 SesID     = 'DS2'; 
 TR        = 0.645;
-
-SimMord  = 50;
+T         = 500;
+SimMord   = 50;
 
 % What is flowing in from the cluster:
 disp('From the cluster ======================')
@@ -34,7 +34,7 @@ Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
 Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/ROCKLAND/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
 
 if ~lFWHM
-    Path2Img = [Path2ImgDir '/prefiltered_func_data_gm_bet.nii'];
+    Path2Img = [Path2ImgDir '/prefiltered_func_data_gm_bet.nii.gz'];
 else
     Path2Img = [Path2ImgDir '/prefiltered_func_data_bet_FWHM' num2str(lFWHM) '.nii'];
 end
@@ -54,23 +54,23 @@ end
 
 disp(['Output stuff: ' Path2ImgResults])
 
+SaveMatFileFlag     = 1;
 SaveImagesFlag      = 1; 
 MParamNum           = 24; 
-NumTmpTrend         = 3;
 
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
 disp('=====LOAD THE IMAGE ===========================')
 [Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean');
-T = InputImgStat.CleanedDim(2);
+Ti = InputImgStat.CleanedDim(2);
 TR = InputImgStat.voxelsize(4);
 Vorig = InputImgStat.CleanedDim(1);
 V = Vorig;
 
-if size(Y,1)~=T; Y = Y'; end; %TxV
+if size(Y,1)~=Ti; Y = Y'; end; %TixV
 %%% DETREND %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-pp = 1+fix(TR.*T/150);
-dY = multpolyfit(repmat(1:T,Vorig,1),Y',T,pp)';
+NumTmpTrend = 1+fix(TR.*Ti/150);
+dY = multpolyfit(repmat(1:Ti,Vorig,1),Y',Ti,NumTmpTrend)';
 dY = dY - mean(dY); 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,9 +101,8 @@ X           = MCp;
 X           = X - mean(X); % demean everything 
 %%% RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 pinvX            = pinv(X); 
-ResidFormingMat0 = eye(T)-X*pinvX; % residual forming matrix 
-residY           = ResidFormingMat0*dY;
-dY               = dY - residY; % clean the data
+ResidFormingMat0 = eye(Ti)-X*pinvX; % residual forming matrix 
+dY               = ResidFormingMat0*dY;
 
 pinvEDX           = pinv(EDX); 
 ResidFormingMat  = eye(T)-EDX*pinvEDX; 
@@ -111,28 +110,19 @@ ResidFormingMat  = eye(T)-EDX*pinvEDX;
 %%% BIAS REDUCTION OF AUTOREGRESSIVE MODELS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-YWflag = 0; WrosleyFlag = 0; ACFflag = 0; ARMAHRflag = 0; MPparamNum = 0; 
+ACFadjflag = 0; WrosleyFlag = 0; ACFflag = 0; ARMAHRflag = 0; MPparamNum = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    WrosleyFlag = 1; 
-    warning('off','MATLAB:toeplitz:DiagonalConflict')
-    M_biasred   = zeros(Mord+1);
-    for i=1:(Mord+1)
-        Di                  = (diag(ones(1,T-i+1),i-1)+diag(ones(1,T-i+1),-i+1))/(1+(i==1));
-        for j=1:(Mord+1)
-           Dj               = (diag(ones(1,T-j+1),j-1)+diag(ones(1,T-j+1),-j+1))/(1+(j==1));
-           M_biasred(i,j)   = trace( ResidFormingMat*Di*ResidFormingMat*Dj )/(1+(i>1));
-        end
-    end
-    invM_biasred = inv(M_biasred);
-elseif strcmpi(pwdmethod,'AR-YW') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    YWflag  = 1; 
-    invM_biasred = eye(Mord+1);
+    WrosleyFlag = 1;     
+    invM_biasred = ACFBiasAdj(ResidFormingMat,T,Mord);    
+elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ACFadjflag          = 1; 
+    invM_biasred = ACFBiasAdj(ResidFormingMat,T,Mord); 
 elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ACFflag = 1;
+    ACFflag         = 1;
 elseif strcmpi(pwdmethod,'ARMAHR') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ARMAHRflag = 1; 
-    MPparamNum          = 1;
-    ARParamARMA         = 50;
+    ARMAHRflag      = 1; 
+    MPparamNum      = 1;  % the MA order 
+    ARParamARMA     = 50; % the higher fit in ARMA HR
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,10 +131,14 @@ end
 
 %%% ACFs %%%%%%%%%%%%%%%
 disp(['Calculate the autocorrelation coefficients.'])
-[~,~,dYacov]  = AC_fft(dY,T); % Autocovariance 
+[~,~,dYacov]  = AC_fft(dY,Ti); % Autocovariance 
 dYacov        = dYacov'; %TxV
 dYacorr       = dYacov./sum(abs(dY).^2); % Autocorrelation
 ACL           = sum(dYacorr.^2); % Autocorrelation Length
+
+%% RAM SAVE %%
+clear dY Y
+%%%%%%%%%%%%%%
 
 %%% Preallocate memory
 Bhat_PW    = zeros(V,1);
@@ -176,48 +170,56 @@ for vi = 1:V
     %%% Prewhiten the residuals %%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
 
-    residY     = ResidFormingMat*sY_tmp;
-    residY     = residY-mean(residY); 
-    dRESacorr  = autocorr(residY,T-1); % pretty fast on single time series
-    dRESacov   = dRESacorr.*sum(abs(residY).^2);
+    residY      	    = ResidFormingMat*sY_tmp;
+    residY     	 	    = residY-mean(residY); 
+    [dRESacorr,~,dRESacov]  = AC_fft(residY',T);
+    dRESacorr = dRESacorr';
+    dRESacov  = dRESacov';
     
-    if YWflag % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['AR-YW ::: on voxel ' num2str(vi)]); end;        
-        %AR_YW -------------------------------------------
-        ac_tmp          = dRESacorr;    
-        R_tmp           = toeplitz(ac_tmp(1:Mord));
-        r_tmp           = ac_tmp(2:Mord+1);
-        %YWARparam_tmp   = pinv(R_tmp)*r_tmp;
-        YWARparam_tmp   = R_tmp\r_tmp;
-        % ------------------------------------------------
-        
-        ACMat           = full(spm_Q(YWARparam_tmp,T));
-        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
-        %invACMat        = inv(ACMat); % pinv is damn slow!
-        %sqrtmVhalf      = chol(invACMat);
+    %dRESacorr  = autocorr(residY,T-1); % pretty fast on single time series, autocorr doesn't exist in Octave -- WTF!
+    %dRESacov   = dRESacorr.*sum(abs(residY).^2);
+    
+    if ACFadjflag % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if ~mod(vi,5000); disp([ pwdmethod ' ::: on voxel ' num2str(vi)]); end;        
+%         AR_YW -------------------------------------------
+%         ac_tmp          = dRESacorr;    
+%         R_tmp           = toeplitz(ac_tmp(1:Mord));
+%         r_tmp           = ac_tmp(2:Mord+1);
+%         %YWARparam_tmp   = pinv(R_tmp)*r_tmp;
+%         YWARparam_tmp   = R_tmp\r_tmp;
+%         % ------------------------------------------------
+%         ACMat           = full(spm_Q(YWARparam_tmp,T));
+%         [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
+%         %invACMat        = inv(ACMat); % pinv is damn slow!
+%         %sqrtmVhalf      = chol(invACMat);
+
+        [sqrtmVhalf,spdflag] = ACF_ResPWm(dRESacov,Mord,invM_biasred,1);
+
 
     elseif ACFflag % ACF - Tukey tapered %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['ACF-TUKEY ::: on voxel ' num2str(vi)]); end; 
-        acfdRES     = dRESacorr; 
-        %Mord        = 2*round(sqrt(T));
-        acfdRES_tt  = [1 TukeyTaperMe(acfdRES(2:end),T-1,Mord)];
-        ACMat       = toeplitz(acfdRES_tt);  
+        if ~mod(vi,5000); disp([ pwdmethod ' ::: on voxel ' num2str(vi)]); end;        
+%         acfdRES     = dRESacorr; 
+%         %Mord        = 2*round(sqrt(T));
+%         acfdRES_tt  = [1 TukeyTaperMe(acfdRES(2:end),T-1,Mord)];
+%         ACMat       = toeplitz(acfdRES_tt);  
+%         [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
+        
+        [sqrtmVhalf,spdflag] = ACF_ResPWm(dRESacov,Mord,[],1);
 
-        [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
-        
     elseif WrosleyFlag % Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['AR-W ::: on voxel ' num2str(vi)]); end; 
-        dRESac_adj      = (invM_biasred*dRESacov(1:Mord+1));
-        dRESac_adj      = dRESac_adj./dRESac_adj(1); % make a auto*correlation*
-        
-        [Ainvt,posdef]          = chol(toeplitz(dRESac_adj)); 
-        p1                      = size(Ainvt,1); 
-        A                       = inv(Ainvt'); 
-        sqrtmVhalf              = toeplitz([A(p1,p1:-1:1) zeros(1,T-p1)],zeros(1,T)); 
-        sqrtmVhalf(1:p1,1:p1)   = A;
+        if ~mod(vi,5000); disp([ pwdmethod ' ::: on voxel ' num2str(vi)]); end;        
+%         dRESac_adj      = (invM_biasred*dRESacov(1:Mord+1));
+%         dRESac_adj      = dRESac_adj./dRESac_adj(1); % make a auto*correlation*
+%         [Ainvt,posdef]          = chol(toeplitz(dRESac_adj)); 
+%         p1                      = size(Ainvt,1); 
+%         A                       = inv(Ainvt'); 
+%         sqrtmVhalf              = toeplitz([A(p1,p1:-1:1) zeros(1,T-p1)],zeros(1,T)); 
+%         sqrtmVhalf(1:p1,1:p1)   = A;
+
+           [sqrtmVhalf,spdflag] = AR_ResPWm(dRESacov,Mord,invM_biasred);
 
     elseif ARMAHRflag % ARMA HR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ~mod(vi,5000); disp(['ARMA-HR ::: on voxel ' num2str(vi)]); end; 
+        if ~mod(vi,5000); disp([ pwdmethod ' ::: on voxel ' num2str(vi)]); end;        
   
         %AR_YW -------------------------------------------
         ac_tmp              = dRESacorr;    
@@ -227,7 +229,7 @@ for vi = 1:V
         YWARparam_tmp       = R_tmp\r_tmp;
         % ------------------------------------------------
         
-        [arParam,maParam]    = ARMA_HR_ACF(residY(:,vi),YWARparam_tmp',T,Mord,MPparamNum);
+        [arParam,maParam]    = ARMA_HR_ACF(residY,YWARparam_tmp',T,Mord,MPparamNum);
         ACMat                = ARMACovMat([arParam,maParam],T,Mord,MPparamNum);
         [sqrtmVhalf,spdflag] = CholWhiten(ACMat);
     end
@@ -258,21 +260,65 @@ SE_Naive                                    = Stat_Naive_SE_tmp.se;
 tVALUE_Naive                                = Stat_Naive_SE_tmp.tval;
 [~,CPSstat_Naive,CPZ_Naive]                 = CPSUnivar(resNaive,X0);
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SPECTRUM OF THE RESIDUALS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('++++++++++++Calculate the spectrum of the residuals.')
+[dpwRESXp,dpwRESYp,fs_PW] = DrawMeSpectrum(dpwRES,TR,0);
+dpwRESYp            = mean(dpwRESYp,2); % average across voxels
+
+clear dpwRES
+
+[resNaiveSXp,resNaiveYp,fs_Naive] = DrawMeSpectrum(resNaive,TR,0);
+resNaiveYp               = mean(resNaiveYp,2); % average across voxels
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SAVE THE RESULTS AS AN IMAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if SaveImagesFlag
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    VariableList = {'SE_PW','SE_Naive','Bhat_Naive','Bhat_PW'};
+    VariableList = {'SE_PW','SE_Naive',...
+		'Bhat_Naive','Bhat_PW',...
+		'tVALUE_Naive','tVALUE_PW',...
+ 		'fs_PW','fs_Naive'};
     OutputImgStat            = InputImgStat.spmV(1);
     OutputImgStat.Removables = InputImgStat.Removables;
 
     for vname = VariableList
         tmpvar                   = eval(vname{1});
-        OutputImgStat.fname      = [Path2ImgResults '/SimED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum)  '_' vname{1} '.nii'];
+        OutputImgStat.fname      = [Path2ImgResults '/Sim'  num2str(SIDX)  '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum)  '_' vname{1} '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',OutputImgStat);
-
+	system(['gzip ' OutputImgStat.fname])
     end
 end
+
+% MAT FILES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if SaveMatFileFlag
+    GLM.df = Stat_Naive_SE_tmp.df;
+    GLM.X  = X0;
+    GLM.C  = [0 1];
+    GLM.EDtype = EDtype;
+    GLM.EDFreq = BCl;
+
+    SPEC.X_RES   = resNaiveSXp;
+    SPEC.Y_RES   = resNaiveYp;
+    SPEC.X_pwRES = dpwRESXp;
+    SPEC.Y_pwRES = dpwRESYp;
+
+    PW.dt     = 'poly';
+    PW.dtl    = NumTmpTrend;
+    PW.pwmeth = pwdmethod;
+    PW.fwhm   = lFWHM;
+    PW.MAp    = MPparamNum;
+    PW.ARp    = Mord;
+
+    MatFileName = [Path2ImgResults '/Sim'  num2str(SIDX)  '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '.mat'];
+    save(MatFileName,'GLM','SPEC','PW')
+end
+
+disp('--DONE--')
+
 

@@ -27,7 +27,7 @@ Yt = Yt(:,1:20:end);
 Yt = Yt-repmat(mean(Yt),900,1);
 
 disp('Prewhiten with SPD')
-ts0 = PrewhitenSPD(Yt,20,1/TR);
+ts0 = PrewhitenSPD(Yt,30,1/TR);
 
 [xx,yy] = DrawMeSpectrum(ts0,TR); 
 
@@ -38,18 +38,21 @@ Ytacov        = Ytacov'; %TxV
 
 for vi = 1:V
     if ~mod(vi,100); disp(['on voxel ' num2str(vi)]); end; 
-    [sqrtmVhalf,spdflag] = ACF_ResPWm(Ytacov(:,vi),30,[],1);
+    [sqrtmVhalf,spdflag] = ACF_ResPWm(Ytacov(:,vi),round(sqrt(T)),[],1);
     pwYt(:,vi) = sqrtmVhalf*Yt(:,vi);
 end
 
 
 [pwxx,pwyy] = DrawMeSpectrum(pwYt,TR); 
 
-figure; 
+fh = figure('position',[50,500,1300,500]); 
 hold on; grid on; 
 plot(xx,mean(yy,2),'linewidth',1.3)
 plot(pwxx,mean(pwyy,2),'LineWidth',1.3)
 plot([0 0.7],[1 1],'color',[.5 .5 .5],'LineWidth',1.3)
+xlim([0 0.7])
 legend({'Spectral(AR=20)','ACF(Lag=30)'})
 ylabel('Power')
 xlabel('Freq')
+set(fh,'color','w')
+export_fig(fh,'pwtest0.pdf')
