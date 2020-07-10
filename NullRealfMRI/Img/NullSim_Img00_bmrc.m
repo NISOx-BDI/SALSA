@@ -369,7 +369,7 @@ elseif strcmpi(pwdmethod,'gACFadjT1S0P20') % Two stage without tissue segmentati
     aclageval = 0; 
     ACFRegF   = 1;
     poolflag  = 20;
-    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gsfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);     
+    [~,~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gsfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);     
     
 % --------------------------------------------------------------------------------------
 % ------------------------ Two Stage Methods: gfeatxfeat -------------------------------    
