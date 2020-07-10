@@ -365,11 +365,11 @@ elseif strcmpi(pwdmethod,'gACFadjT1S0P0') % Two stage without tissue segmentatio
     poolflag  = 0;
     [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);    
     
-elseif strcmpi(pwdmethod,'gACFadjT1S0P10') % Two stage without tissue segmentation 
+elseif strcmpi(pwdmethod,'gACFadjT1S0P20') % Two stage without tissue segmentation 
     aclageval = 0; 
     ACFRegF   = 1;
-    poolflag  = 10;
-    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);     
+    poolflag  = 20;
+    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gsfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);     
     
 % --------------------------------------------------------------------------------------
 % ------------------------ Two Stage Methods: gfeatxfeat -------------------------------    
@@ -388,13 +388,13 @@ elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P0') % Two stage with knowledge of
     poolflag  = 0; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);  
     
-elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P10') % Two stage with knowledge of tissue
+elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P20') % Two stage with knowledge of tissue
     ACFRegF   = 1; 
-    poolflag  = 10; 
+    poolflag  = 20; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gsfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);   
-elseif strcmpi(pwdmethod,'gACFadjxACFadjT1S0P10') % Two stage with knowledge of tissue
+elseif strcmpi(pwdmethod,'gACFadjxACFadjT1S0P20') % Two stage with knowledge of tissue
     ACFRegF   = 1; 
-    poolflag  = 10; 
+    poolflag  = 20; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gsfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,[],poolflag);      
 
 % --------------------------------------------------------------------------------------
