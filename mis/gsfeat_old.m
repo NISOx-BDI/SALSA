@@ -54,7 +54,7 @@
 % %plot(PSDx,mean(PSDy,2))
 % plot(WPSDx,mean(WPSDy,2))
 
-function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,badjflag,K,poolflag)
+function [WY,WX,jidx,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gsfeat(Y,X,TR,tcon,tukey_m,tukey_f,aclageval,badjflag,K,poolflag)
 % Y      : TxV
 % X      : TxEV. Always always intercept is the first column
 % tcon   : 1xEV
@@ -93,7 +93,7 @@ function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR
     RES                = R*Y;    
     R                  = R*K; % inject the filter into R
    %%%%% REMOVE THIS AFTER EVALUATION
-    [cbhat,~,~,stat] = myOLS(Y,X,tcon);
+    [cbhat,~,~,stat]   = myOLS(Y,X,tcon);
     se                 = stat.se;
     tv                 = stat.tval;
     zv                 = stat.zval;
@@ -108,31 +108,46 @@ function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR
     if ~badjflag;        R = [];                     end
     if ~exist('poolflag','var') || isempty(poolflag); poolflag = 1; end 
     
-    acf_tukey   = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolflag);
-
-    % make the pwfilter
-    W_fft       = establish_pwfilter(acf_tukey,ntp);
-    % median of W_fft while avoiding NaNs. 
-    W_fft       = prctile(W_fft,50,2); 
-    %W_fft       = median(W_fft,2); % median across voxels, just to avoid outliers. 
+    [acf_tukey,jidx]   = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolflag);
     
-    % Prewhiten the time series
-    WY          = prewhiten_timeseries(Y,W_fft);
-
-    % Prewhiten the design
-    Xnoint      = X(:,2:end); % put aside the intercept when prewhitening the design
-    Xnoint_fft  = fft_model(Xnoint);
-
-    WXnoint     = prewhiten_model(Xnoint_fft,W_fft,ntp);
-    WX          = [ones(ntp,1),WXnoint]; % add back the intercept 
-
-    %GLS
-    [Wcbhat,~,WRES,wstat] = myOLS(WY,WX,tcon);
-    wse                   = wstat.se;
-    wtv                   = wstat.tval;
-    wzv                   = wstat.zval;    
-    clear wstat
+    Wcbhat   = zeros(nvox,1);
+    WRES     = zeros(ntp,nvox);
+    wse      = zeros(nvox,1); 
+    wtv      = zeros(nvox,1);
+    wzv      = zeros(nvox,1);    
     
+    for ji = 1:numel(jidx)
+        idx         = jidx{ji}; 
+        
+        disp(['gfeat:: Whitening the data and model for chunk: ' num2str(ji) ', size: ' num2str(numel(idx))])
+        
+        % make the pwfilter
+        W_fft       = establish_pwfilter(acf_tukey{ji},ntp);
+        W_fft       = median(W_fft,2); % median across voxels, just to avoid outliers. 
+
+        % Prewhiten the time series
+        WY_tmp          = prewhiten_timeseries(Y(:,idx),W_fft);
+
+        % Prewhiten the design
+        Xnoint      = X(:,2:end); % put aside the intercept when prewhitening the design
+        Xnoint_fft  = fft_model(Xnoint);
+
+        WXnoint     = prewhiten_model(Xnoint_fft,W_fft,ntp);
+        WX_tmp      = [ones(ntp,1),WXnoint]; % add back the intercept 
+
+        %GLS
+        [Wcbhattmp,~,WREStmp,wstat] = myOLS(WY_tmp,WX_tmp,tcon);
+        Wcbhat(idx)                 = Wcbhattmp;
+        WRES(:,idx)                 = WREStmp;
+        wse(idx)                    = wstat.se;
+        wtv(idx)                    = wstat.tval;
+        wzv(idx)                    = wstat.zval;    
+        
+        WY{ji}                      = WY_tmp;
+        WX{ji}                      = WX_tmp;
+        
+        clear wstat
+    end
     % refit the model to pre-whitened data -------------------------------
 %     Wcbhat   = zeros(1,nvox);
 %     WYhat    = zeros(ntp,nvox); 
@@ -162,7 +177,7 @@ function [WY,WX,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR
 
 end
 
-function acf_tukey = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolflag)
+function [acf_tukey,jidx] = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolflag)
 % RES should be TxV. T is time, V voxel. 
     
 
@@ -170,14 +185,30 @@ function acf_tukey = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolflag)
     [~,acfCI,acv]   = AC_fft(RES,ntp);
     acv             = acv';
     
-    if poolflag
+    if poolflag==1
         disp(['gfeat:: pooling by autocorrelation.'])
-        %acl          = sum(acf(1,1:fix(ntp/4)).^2); % Anderson's suugestion of ignoring beyond ntps/4
         acf1        = acv(1+1,:)./acv(1,:); %acf(1) 
-        jidx        = find(abs(acf1)>acfCI(2));  % only if a voxel exceeds the CI    
+        jidx{1}     = find(abs(acf1)>acfCI(2));  % only if a voxel exceeds the CI    
         nvox        = numel(jidx);
         acv         = acv(:,jidx);
+    
+    elseif poolflag>1
+        acftmp  = acv./acv(1,:);
+        acl     = sum(acftmp(1:fix(ntp/4),:).^2); % Anderson's suugestion of ignoring beyond ntps/4
+        prctl   = 0:fix(100/poolflag):100;
+        aclt    = prctile(acl,prctl);
+        
+        % map to the real value        
+        for t = 1:numel(aclt)-1
+            jidxtmp      = find(acl>=aclt(t) & acl<=aclt(t+1));
+            jidx{t}      = jidxtmp;
+            acl(jidxtmp) = 0; % get rid of the overlaps and also free up memory
+            disp(['gfeat:: size of pool: ' num2str(numel(jidx{t}))])
+        end
+        clear acl 
+        
     else
+       jidx{1} = 1:nvox;
        disp('gfeat:: No pooling is done.') 
     end
     
@@ -187,16 +218,23 @@ function acf_tukey = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolflag)
         disp(['gfeat:: Number of pooled voxels: ' num2str(nvox)])
     end    
     
+
     if tukey_m < 0
-        %flag2      = 1; 
-        acftmp     = acv./acv(1,:);        
-     
-        where2stop = FindBreakPoint(acftmp,ntp);
-        clear acftmp
-   
-        tukey_m    = fix(prctile(where2stop,99.999)); % the max, but avoid outlier
-        disp(['gfeat:: mean breakpint: ' num2str(mean(where2stop)) ', max:' num2str(max(where2stop)) ', 99th: ' num2str(tukey_m)])
-        where2stop(where2stop>tukey_m) = tukey_m; % set everything above tukey_m to tukey_m
+        for ji = 1:numel(jidx)
+            acftmp1 = acftmp(:,jidx{ji});
+            %flag2      = 1; 
+            if poolflag<1
+                acftmp1   = acv./acv(1,jidx{ji});        
+            end
+
+            where2stop    = FindBreakPoint(acftmp1,ntp);
+            clear acftmp1
+
+            tukey_mtmp    = fix(prctile(where2stop,99.999)); % the max, but avoid outlier
+            tukey_jm(ji)  = tukey_mtmp; 
+            disp(['gfeat:: Tukey of Chunk ' num2str(ji) ': ' num2str(tukey_mtmp)])
+        end
+        tukey_m = max(tukey_jm); 
     end
     
     maxlag      = max(aclageval,tukey_m);
@@ -215,32 +253,35 @@ function acf_tukey = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolflag)
         M = eye(aclageval+1); 
     end
     
-    
-    if aclageval 
-        Bfull = ACFbasis(ntp-1,TR); 
-        Best  = Bfull(1:tukey_m+1,:);
-        Beval = Bfull(1:aclageval+1,:);
+    for ji = 1:numel(jidx) 
+        disp(['gfeat:: Finishing chunk ' num2str(ji) ', size: ' num2str(numel(jidx{ji}))])
+        if aclageval 
+            Bfull = ACFbasis(ntp-1,TR); 
+            Best  = Bfull(1:tukey_m+1,:);
+            Beval = Bfull(1:aclageval+1,:);
 
-        g     = (M*Beval)\acv(1:aclageval+1,:);
-        acf1   = Best*g;
-        acf1   = acf1./acf1(1,:); 
-    else
-        acv  = pinv(M)*acv(1:tukey_m+1,:); %apply adjustment
-        acf1  = acv./acv(1,:); % get ACF        
-    end
-    
-    disp('gfeat:: adjusting autocovariances: done.')
+            g     = (M*Beval)\acv(1:aclageval+1,jidx{ji});
+            acf1   = Best*g;
+            acf1   = acf1./acf1(1,:); 
+        else
+            acv1  = pinv(M)*acv(1:tukey_m+1,jidx{ji}); %apply adjustment
+            acf1  = acv1./acv1(1,:); % get ACF        
+        end
 
-    % Tukey taper
-    if tukey_f
-        disp(['gfeat:: Tukey regularisation.'])
-        acf1                        = acf1(1:tukey_m,:);
-        lag                         = 0:tukey_m-1;
-        window                      = .5 * (1 + cos(pi .* lag ./ tukey_m));
-        acf_tukey                   = acf1 .* repmat(window',1,nvox);
-    else
-        disp(['gfeat:: No Tukey regularisation is set.'])
-        acf_tukey                   = acf1(1:tukey_m,:);
+        disp('gfeat:: adjusting autocovariances: done.')
+
+        % Tukey taper
+        if tukey_f
+            disp(['gfeat:: Tukey regularisation.'])
+            nvoxtmp                     = numel(jidx{ji});
+            acf1                        = acf1(1:tukey_m,:);
+            lag                         = 0:tukey_m-1;
+            window                      = .5 * (1 + cos(pi .* lag ./ tukey_m));
+            acf_tukey{ji}               = acf1 .* repmat(window',1,nvoxtmp);
+        else
+            disp(['gfeat:: No Tukey regularisation is set.'])
+            acf_tukey{ji}                   = acf1(1:tukey_m,:);
+        end
     end
 
       

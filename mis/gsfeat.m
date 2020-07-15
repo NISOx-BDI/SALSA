@@ -123,7 +123,9 @@ function [WY,WX,jidx,cbhat,RES,ostat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gsfeat(
         
         % make the pwfilter
         W_fft       = establish_pwfilter(acf_tukey{ji},ntp);
-        W_fft       = median(W_fft,2); % median across voxels, just to avoid outliers. 
+        % median of W_fft while avoiding NaNs. 
+        W_fft       = prctile(W_fft,50,2); 
+        %W_fft       = median(W_fft,2); % median across voxels, just to avoid outliers. 
 
         % Prewhiten the time series
         WY_tmp          = prewhiten_timeseries(Y(:,idx),W_fft);
@@ -193,20 +195,42 @@ function [acf_tukey,jidx] = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolfl
         acv         = acv(:,jidx);
     
     elseif poolflag>1
-        acftmp  = acv./acv(1,:);
+        acftmp  = acv./acv(1,:);       
         acl     = sum(acftmp(1:fix(ntp/4),:).^2); % Anderson's suugestion of ignoring beyond ntps/4
+        
+        % Quickly estimate the AR(p) for diagnostics
+%         p       = 1; 
+%         acl     = zeros(nvox,p);
+%         for vi = 1:nvox
+%             RR         = toeplitz(acftmp(1:p,vi));
+%             rr         = acftmp(2:p+1,vi);    
+%             acl(vi,:)  = pinv(RR)*rr;
+%         end
+        
         prctl   = 0:fix(100/poolflag):100;
         aclt    = prctile(acl,prctl);
+        daclt   = diff(aclt);
+        
+        for t = 1:numel(acl)
+            [~,tt]  = min(abs(acl(t)-daclt));
+            jidxtmp(t) = tt;
+        end
+        
+        for t = 1:numel(daclt)
+            jidx{t} = find(jidxtmp == t);
+            disp(['gfeat:: size of pool: ' num2str(numel(jidx{t})) ', mean: ' num2str(mean(acl(jidx{t})))])
+        end
         
         % map to the real value        
-        for t = 1:numel(aclt)-1
-            jidxtmp      = find(acl>=aclt(t) & acl<=aclt(t+1));
-            jidx{t}      = jidxtmp;
-            acl(jidxtmp) = 0; % get rid of the overlaps and also free up memory
-            disp(['gfeat:: size of pool: ' num2str(numel(jidx{t}))])
-        end
-        clear acl 
-        
+%         for t = 1:numel(aclt)-1
+%             jidxtmp      = find(acl>=aclt(t) & acl<=aclt(t+1));
+%             jidx{t}      = jidxtmp;
+%             acl(jidxtmp) = 0; % get rid of the overlaps and also free up memory
+%             disp(['gfeat:: size of pool: ' num2str(numel(jidx{t}))])
+%         end
+        clear acl jidxtmp
+        jidx = jidx(~cellfun('isempty',jidx));
+    
     else
        jidx{1} = 1:nvox;
        disp('gfeat:: No pooling is done.') 
@@ -302,6 +326,7 @@ function W_fft = establish_pwfilter(acf,ntp)
     
     % feat5/featlib.cc  line 127:
     % But why? If we do this, we'll lose the variance in the original signal
+    % This is to avoid Nyquist! So, everything bounded between 0 & 1
     W_fft0 = sqrt(sum(W_fft(2:end,:).^2))./z_pad;
     W_fft = W_fft./W_fft0;
 
