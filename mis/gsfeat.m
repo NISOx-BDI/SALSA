@@ -207,16 +207,20 @@ function [acf_tukey,jidx] = g_acf_prep(RES,TR,tukey_m,tukey_f,R,aclageval,poolfl
 %             acl(vi,:)  = pinv(RR)*rr;
 %         end
         
-        prctl   = 0:fix(100/poolflag):100;
-        aclt    = prctile(acl,prctl);
-        daclt   = diff(aclt);
-        
+        %prctl   = unique([0:fix(85/5):85 85:fix(75/poolflag):100 99 100]);
+        %aclt    = prctile(acl,prctl);
+        %daclt   = diff(aclt);
+        %caclt   = aclt(2:end)-daclt;
+        medacl = median(acl);
+        miacl  = min(acl); 
+        p2     = prctile(acl,25);
+        caclt = unique([miacl medacl medacl:max(acl)/poolflag:max(acl)]);
         for t = 1:numel(acl)
-            [~,tt]  = min(abs(acl(t)-daclt));
+            [~,tt]  = min(abs(acl(t)-caclt));
             jidxtmp(t) = tt;
         end
         
-        for t = 1:numel(daclt)
+        for t = 1:numel(caclt)
             jidx{t} = find(jidxtmp == t);
             disp(['gfeat:: size of pool: ' num2str(numel(jidx{t})) ', mean: ' num2str(mean(acl(jidx{t})))])
         end
