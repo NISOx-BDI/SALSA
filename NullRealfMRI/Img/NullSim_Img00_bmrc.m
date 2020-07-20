@@ -337,6 +337,9 @@ elseif strcmpi(pwdmethod,'ACF') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif strcmpi(pwdmethod,'ACFT0S0') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ACFRegF = 0; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,[],[],0,[]);    
+elseif strcmpi(pwdmethod,'ACFT1S0') % ACF %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ACFRegF = 1; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,[],[],0,[]);   
 elseif strcmpi(pwdmethod,'ACFadj') % Yule-Walker %%%%%%%%%%%%%%%%%%%%%%%%%%
     ACFRegF = 1; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = feat5(Y,X,glmcont,Mord,ACFRegF,InputImgStat,path2mask,1,K); 
