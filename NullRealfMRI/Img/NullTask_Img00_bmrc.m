@@ -33,6 +33,7 @@ disp(['EDtype: ' EDtype])
 disp(['taskSNR: ' num2str(taskSNR)])
 disp('=======================================')
 
+TaskType = 'kernel'; 
 
 SaveImagesFlag      = 1; 
 SaveMatFileFlag     = 1; 
@@ -118,6 +119,16 @@ disp(['Output stuff: ' Path2ImgResults])
 
 
 
+
+
+
+
+
+
+
+
+
+
 %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
 disp('=====LOAD THE IMAGE ===========================')
 
@@ -185,19 +196,6 @@ MCp = GenMotionParam(MCp,MParamNum);
 X = [X,MCp];
 disp(['design updated, ' num2str(size(X,2))])
 
-% -------------- INDUCE TASK ---------------------------------------------
-ROIfile = [Path2ImgDir '/atlas/Yeo_func_2.nii.gz']; 
-[~,Idx_roi]   = MaskImg(Y',ROIfile,InputImgStat); % Time series in WM 
-Idx_roi       = Idx_roi{1};
-Yroi          = Y(:,Idx_roi);
-EDXtmp        = EDX;
-EDXtmp        = EDXtmp-mean(EDXtmp); 
-EDXtmp        = (EDXtmp./std(EDXtmp));
-faketask      = (std(Yroi).*EDXtmp);
-Yroit         = Yroi + faketask.*taskSNR;
-
-% Put back the ROI back into Y
-Y(:,Idx_roi)  = Yroit;
 
 if lFWHM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -241,6 +239,38 @@ if lFWHM
  
 end
 
+% -------------- INDUCE TASK ---------------------------------------------
+if strcmpi(TaskType,'roi')
+    ROIfile = [Path2ImgDir '/atlas/Yeo_func_2.nii.gz']; 
+    [~,Idx_roi]   = MaskImg(Y',ROIfile,InputImgStat); % Time series in WM 
+    Idx_roi       = Idx_roi{1};
+    Yroi          = Y(:,Idx_roi);
+    EDXtmp        = EDX;
+    EDXtmp        = EDXtmp-mean(EDXtmp); 
+    EDXtmp        = (EDXtmp./std(EDXtmp));
+    faketask      = (std(Yroi).*EDXtmp);
+    Yroit         = Yroi + faketask.*taskSNR;
+elseif strcmpi(TaskType,'kernel')
+    ROIfile = [Path2ImgDir '/atlas/squaremaskkernel_func_mask.nii.gz'];
+    [~,Idx_roi]   = MaskImg(Y',ROIfile,InputImgStat); % Time series in WM 
+    Idx_roi       = Idx_roi{1};
+    Yroi          = Y(:,Idx_roi);
+    
+    EDXtmp        = EDX;
+    EDXtmp        = EDXtmp-mean(EDXtmp); 
+    EDXtmp        = (EDXtmp./std(EDXtmp));
+    faketask      = (std(Yroi).*EDXtmp);
+    
+    taskSNRpath   = [Path2ImgDir '/atlas/squaremaskkernel_func.nii.gz'];
+    taskSNR       = CleanNIFTI_spm(taskSNRpath);
+    Yroit         = Yroi + faketask.*taskSNR';
+    
+else
+    error('Unrecog option.')
+end
+
+% Put back the ROI back into Y
+Y(:,Idx_roi)  = Yroit;
 
 % ------------------------------------------------------------------------
 
@@ -443,11 +473,11 @@ elseif strcmpi(pwdmethod,'gACFadjT1S0') % Two stage without tissue segmentation
     poolflag  = 1;
     [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);
 
-elseif strcmpi(pwdmethod,'gACFadjT1S0P0') % Two stage without tissue segmentation 
+elseif strcmpi(pwdmethod,'gACFadjT1S0P10') % Two stage without tissue segmentation 
     aclageval = 0; 
     ACFRegF   = 1;
-    poolflag  = 0;
-    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);    
+    poolflag  = 20;
+    [~,~,cbhat,RES,stat,se,tv,zv,Wcbhat,WRES,wse,wtv,wzv] = gsfeat(Y,X,TR,glmcont,Mord,ACFRegF,aclageval,1,K,poolflag);    
 % --------------------------------------------------------------------------------------
 % ------------------------ Two Stage Methods: gfeatxfeat -------------------------------    
 
@@ -637,7 +667,7 @@ if SaveImagesFlag
     for vname = VariableList
 
         tmpvar     = eval(vname{1});
-        fname      = [Path2ImgResults '/NTASK_SNR_' num2str(taskSNR.*100) '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.nii'];
+        fname      = [Path2ImgResults '/NTASK_SNR_' TaskType '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_' vname{1} '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.nii'];
 
         CleanNIFTI_spm(tmpvar,'ImgInfo',InputImgStat.spmV,'DestDir',fname,'removables',InputImgStat.Removables);
         %system(['gzip ' fname]);
@@ -687,7 +717,7 @@ if SaveMatFileFlag
     PW.MAp    = MPparamNum;
     PW.ARp    = Mord;
     
-    MatFileName = [Path2ImgResults '/NTASK_SNR_' num2str(taskSNR.*100) '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
+    MatFileName = [Path2ImgResults '/NTASK_SNR_' TaskType '_ED' EDtype '_' num2str(BCl) '_' pwdmethod '_AR' num2str(Mord) '_MA' num2str(MPparamNum) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
     save(MatFileName,'GLM','SPEC','PW','NTASK')
 end
 
