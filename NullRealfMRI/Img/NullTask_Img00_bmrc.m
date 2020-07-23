@@ -495,6 +495,11 @@ elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P0') % Two stage with knowledge of
     poolflag  = 0; 
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);         
     
+elseif strcmpi(pwdmethod,'gACFadjxACFadj2tT1S0P5') % Two stage with knowledge of tissue
+    ACFRegF   = 1; 
+    poolflag  = 5; 
+    [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,wse,wtv,wzv] = gsfeatxfeat(Y,X,TR,glmcont,Mord,ACFRegF,InputImgStat,[],1,K,WMseg,poolflag);      
+    
 % --------------------------------------------------------------------------------------
 % ------------------------ Two stage Methods: gReML x ACF ------------------------------    
 
