@@ -109,7 +109,7 @@ for s_cnt = 1:NSUB
     disp(['Motion params: ' Path2MC])
 
     % Directory 2 save the results
-    Path2ImgResults=[PATH2AUX '/ExampleData/R.mpp/RNullfMRI_' SubID '_' SesID];
+    Path2ImgResults='/well/nichols/users/scf915/NEO/R.PW/ImgSpecCheck';
     if ~exist(Path2ImgResults, 'dir')
         mkdir(Path2ImgResults)
         disp(['The directory: ' Path2ImgResults ' did not exists. I made one. '])
@@ -240,4 +240,8 @@ for s_cnt = 1:NSUB
     
     clear dY RES X
 end
+
+MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
+save(MatFileName,'GLM','SPEC','PW')
+
 
