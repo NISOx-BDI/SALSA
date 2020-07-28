@@ -198,6 +198,7 @@ for s_cnt = 1:numel(SubList)
         disp(['design updated, ' num2str(size(X,2))]) 
     end
     
+    XX(:,:,s_cnt) = X;
     
     [Xs,Ys]        = DrawMeSpectrum(Y,TR,0);
     YSpecs(s_cnt,:)   = mean(Ys,2);    
@@ -208,7 +209,8 @@ for s_cnt = 1:numel(SubList)
     if strcmpi(TempTreMethod,{'hpf'})
         if isempty(NumTmpTrend) || ~exist('NumTmpTrend','var'); NumTmpTrend=100; end; 
         hp_ff = hp_fsl(T,NumTmpTrend,TR);    
-        dY     = hp_ff*Y;  % high pass filter the data
+        dY    = hp_ff*Y;  % high pass filter the data
+        X     = hp_ff*X;  % high pass filter the data
     elseif strcmpi(TempTreMethod,{'hpfc'})    
         NumTmpTrend = hpf_cutoffcalc(X,TR,[Path2ImgResults '/' EDtype '_' num2str(BCl) 'design.mat']);
         hp_ff = hp_fsl(T,NumTmpTrend,TR);    
@@ -237,10 +239,12 @@ for s_cnt = 1:numel(SubList)
     [dXs,dYres]         = DrawMeSpectrum(RES,TR,0);
     RESdSpecs(s_cnt,:)  = mean(dYres,2);
     
+    dXX(:,:,s_cnt) = X;
+    
     clear dY RES X
 end
 
 MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_MP' num2str(MParamNum) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
-save(MatFileName,'dXs','YSpecs','YdSpecs','gYdSpecs','RESdSpecs')
+save(MatFileName,'dXs','YSpecs','YdSpecs','gYdSpecs','RESdSpecs','XX','dXX')
 
 disp('xxDONExx')
