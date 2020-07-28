@@ -235,13 +235,13 @@ for s_cnt = 1:NSUB
     glmcont([2,3]) = [1 -1];
     [~,~,RES,~]    = myOLS(dY,X,glmcont);
     
-    [dXs,dYs]           = DrawMeSpectrum(RES,TR,0);
-    RESdSpecs(s_cnt,:)  = mean(dYs,2);
+    [dXs,dYres]         = DrawMeSpectrum(RES,TR,0);
+    RESdSpecs(s_cnt,:)  = mean(dYres,2);
     
     clear dY RES X
 end
 
 MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
-save(MatFileName,'GLM','SPEC','PW')
+save(MatFileName,'dXs','YSpecs','YdSpecs','gYdSpecs','RESdSpecs')
 
 
