@@ -6,7 +6,7 @@ icaclean        = 0;
 EDtype          = 'ERF'; 
 TempTreMethod   = 'hpf';
 
-MParamNum           = 0;
+MParamNum           = 24;
 gsrflag             = 0;
 TempDerv            = 0;
 
