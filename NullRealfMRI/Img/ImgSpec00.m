@@ -1,7 +1,6 @@
 clear
 
 COHORT          = 'NEO'; 
-NSUB            = 10; 
 lFWHM           = 0; 
 icaclean        = 0; 
 EDtype          = 'ERF'; 
@@ -32,7 +31,7 @@ SubList = {'CC00649XX23','CC00698XX23','CC00789XX23','CC00797XX23','CC00839XX23'
 SesList = {'191201','220400','21110','12110','23710','26910'};
 
 
-for s_cnt = 1:NSUB
+for s_cnt = 1:numel(SubList)
     
     SubID = SubList{s_cnt};
     SesID = SesList{s_cnt};
