@@ -26,7 +26,7 @@ disp('=====SET UP PATHS =============================')
 %Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
 %Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/ROCKLAND/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
 %Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/' COHORT '/' SubID '_3T_rfMRI_' SesID '_mpp/'];
-COHORTDIR = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/' COHORT];
+COHORTDIR='/well/nichols/users/kfh142/data/baby/neofmri_2nd_release_rerun2/';
 
 SubList = {'CC00649XX23','CC00698XX23','CC00789XX23','CC00797XX23','CC00839XX23','CC00847XX23'};
 SesList = {'191201','220400','21110','12110','23710','26910'};
