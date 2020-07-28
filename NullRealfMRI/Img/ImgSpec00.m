@@ -13,12 +13,12 @@ TempDerv            = 0;
 
 disp('=======================================')
 
-PATH2AUX='/Users/sorooshafyouni/Home/GitClone/FILM2';
+PATH2AUX='~/bin/FILM2';
 addpath([PATH2AUX '/utils/Trend'])
-addpath('/Users/sorooshafyouni/Home/matlab/spm12')
 addpath([PATH2AUX '/utils/AR_YW'])
-addpath([PATH2AUX '/utils/ARMA_HR'])
 addpath([PATH2AUX '/mis'])
+addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'));
+%addpath('/well/nichols/users/scf915/externals/spm12')
 
 
 disp('=====SET UP PATHS =============================')
