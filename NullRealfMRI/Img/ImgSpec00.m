@@ -6,7 +6,7 @@ icaclean        = 0;
 EDtype          = 'ERF'; 
 TempTreMethod   = 'hpf';
 
-MParamNum           = 24;
+MParamNum           = 0;
 gsrflag             = 0;
 TempDerv            = 0;
 
@@ -240,7 +240,7 @@ for s_cnt = 1:numel(SubList)
     clear dY RES X
 end
 
-MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
+MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_MP' num2str(MParamNum) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
 save(MatFileName,'dXs','YSpecs','YdSpecs','gYdSpecs','RESdSpecs')
 
-
+disp('xxDONExx')
