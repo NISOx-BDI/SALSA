@@ -263,6 +263,12 @@ elseif strcmpi(TaskType,'kernel')
     
     taskSNRpath   = [Path2ImgDir '/atlas/squaremaskkernel_func.nii.gz'];
     taskSNR       = CleanNIFTI_spm(taskSNRpath);
+    
+    if max(taskSNR)>1
+        disp(['Max exceeds 1; max: ' num2str(taskSNR) ', we will scale back to [0 1]' ])
+        taskSNR = taskSNR./max(taskSNR);
+    end
+    
     Yroit         = Yroi + faketask.*taskSNR';
     
 else
