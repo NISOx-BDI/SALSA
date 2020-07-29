@@ -37,6 +37,7 @@ SesList = ses;
 %SesList = {'191201','220400','21110','12110','23710','26910'};
 
 
+s_cnt0 = 1; 
 for s_cnt = 1:numel(SubList)
     
     SubID = SubList{s_cnt};
@@ -125,6 +126,11 @@ for s_cnt = 1:numel(SubList)
     %%% Read The Data %%%%%%%%%%%%%%%%%%%%%%%%
     disp('=====LOAD THE IMAGE ===========================')
 
+    if ~exist(Path2Img,'file')
+        disp(['Doesnt exists: ' Path2Img])
+        continue; 
+    end; 
+    
     [Y,InputImgStat]=CleanNIFTI_spm(Path2Img,'demean','norm',100);
 
     %---------------------------------------------
@@ -204,10 +210,10 @@ for s_cnt = 1:numel(SubList)
         disp(['design updated, ' num2str(size(X,2))]) 
     end
     
-    XX(:,:,s_cnt) = X;
+    XX(:,:,s_cnt0) = X;
     
     [Xs,Ys]        = DrawMeSpectrum(Y,TR,0);
-    YSpecs(s_cnt,:)   = mean(Ys,2);    
+    YSpecs(s_cnt0,:)   = mean(Ys,2);    
     
     % Temporal trends ----------------------------------------
     TempTrend = []; K = []; 
@@ -230,11 +236,11 @@ for s_cnt = 1:numel(SubList)
     
 
     [dXs,dYs]        = DrawMeSpectrum(dY,TR,0);
-    YdSpecs(s_cnt,:)   = mean(dYs,2);
+    YdSpecs(s_cnt0,:)   = mean(dYs,2);
     
     % Global Signal -----------------------------------------
     [dXs,dgYs]        = DrawMeSpectrum(mean(dY,2),TR,0);
-    gYdSpecs(s_cnt,:) = dgYs;    
+    gYdSpecs(s_cnt0,:) = dgYs;    
     
     % Fit a dumb GLM ----------------------------------------
     X              = [ones(T,1),X];
@@ -243,14 +249,20 @@ for s_cnt = 1:numel(SubList)
     [~,~,RES,~]    = myOLS(dY,X,glmcont);
     
     [dXs,dYres]         = DrawMeSpectrum(RES,TR,0);
-    RESdSpecs(s_cnt,:)  = mean(dYres,2);
+    RESdSpecs(s_cnt0,:)  = mean(dYres,2);
     
-    dXX(:,:,s_cnt) = X;
+    dXX(:,:,s_cnt0) = X;
+    
+    AvailSubID{s_cnt0} = SubID;
+    AvailSesID{s_cnt0} = SesID;
+    
     
     clear dY RES X
+        
+    s_cnt0 = s_cnt0 + 1; 
 end
 
 MatFileName = [Path2ImgResults '/ED' EDtype '_' num2str(BCl) '_FWHM' num2str(lFWHM) '_' TempTreMethod num2str(NumTmpTrend) '_MP' num2str(MParamNum) '_ICACLEAN' num2str(icaclean) '_GSR' num2str(gsrflag) '.mat'];
-save(MatFileName,'dXs','YSpecs','YdSpecs','gYdSpecs','RESdSpecs','XX','dXX')
+save(MatFileName,'dXs','YSpecs','YdSpecs','gYdSpecs','RESdSpecs','XX','dXX','AvailSubID','AvailSesID')
 
 disp('xxDONExx')
