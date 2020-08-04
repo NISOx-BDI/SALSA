@@ -69,6 +69,15 @@ elseif any(strcmpi(COHORT,{'Beijing','Cambridge'}))
     Path2ImgDir  = [Path2ImgRaw '/rest_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/mprage_T1_func_seg.nii.gz'];
     WMseg        = [Path2ImgDir '/seg/mprage_T1_func_seg_2.nii.gz'];
+    
+elseif strcmpi(COHORT,'NEO')
+    Path2ImgRaw  = [COHORTDIR   '/sub-' SubID '/ses-' SesID];
+    Path2ImgDir  = Path2ImgRaw;
+    SEGmaskinEPI = [Path2ImgDir '/fix/func_dseg_seg.nii.gz'];
+    WMseg        = [Path2ImgDir '/fix/func_dseg_wm.nii.gz']; 
+    path2mask    = [Path2ImgDir '/fix/func_dseg_mask.nii.gz']; 
+    Path2MC      = [Path2ImgDir '/mcdc/func_mcdc.eddy_parameters'];        
+    
 end
 
 
@@ -77,19 +86,29 @@ fwhmlab='';
 %     fwhmlab=['_fwhm' num2str(lFWHM)];
 % end
 
-if ~icaclean
-    icalab = 'off';
-    Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet' fwhmlab '.nii.gz'];
-elseif icaclean==1
-    icalab = 'nonaggr';
-    Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
-elseif icaclean==2
-    icalab = 'aggr';
-    Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
+if any(strcmpi(COHORT,{'Beijing','Cambridge','HCP','ROCKLAND'}))
+    if ~icaclean
+        icalab = 'off';
+        Path2Img    = [Path2ImgDir '/prefiltered_func_data_bet' fwhmlab '.nii.gz'];
+    elseif icaclean==1
+        icalab = 'nonaggr';
+        Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
+    elseif icaclean==2
+        icalab = 'aggr';
+        Path2Img    = [Path2ImgDir '/ica-aroma' fwhmlab '/denoised_func_data_nonaggr.nii.gz'];
+    end
+elseif strcmpi(COHORT,'NEO')
+    if ~icaclean
+        icalab = 'off';
+        Path2Img    = [Path2ImgDir '/mcdc/func_mcdc_masked_brain' fwhmlab '.nii.gz'];
+    elseif icaclean==1
+        icalab = 'nonaggr';
+        Path2Img    = [Path2ImgDir '/fix/func_fix_masked_brain' fwhmlab '.nii.gz'];
+    end
+    
+else
+    disp('XXXX UNRECOGNISED DATASET XXXX')
 end
-
-path2mask = [Path2ImgDir '/mask.nii.gz']; 
-Path2MC   = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
 
 disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
@@ -251,7 +270,12 @@ if strcmpi(TaskType,'roi')
     faketask      = (std(Yroi).*EDXtmp);
     Yroit         = Yroi + faketask.*taskSNR;
 elseif strcmpi(TaskType,'kernel')
-    ROIfile = [Path2ImgDir '/atlas/squaremaskkernel_func_mask.nii.gz'];
+    if strcmpi(COHORT,'NEO')
+        ROIfile = [Path2ImgDir '/atlas/squaremaskkernel_neo_func_mask.nii.gz'];
+    else
+        ROIfile = [Path2ImgDir '/atlas/squaremaskkernel_func_mask.nii.gz'];
+    end
+    
     [~,Idx_roi]   = MaskImg(Y',ROIfile,InputImgStat); % Time series in WM 
     Idx_roi       = Idx_roi{1};
     Yroi          = Y(:,Idx_roi);
@@ -261,10 +285,15 @@ elseif strcmpi(TaskType,'kernel')
     EDXtmp        = (EDXtmp./std(EDXtmp));
     faketask      = (std(Yroi).*EDXtmp);
     
-    taskSNRpath   = [Path2ImgDir '/atlas/squaremaskkernel_func.nii.gz'];
+    if strcmpi(COHORT,'NEO')
+        taskSNRpath   = [Path2ImgDir '/atlas/squaremaskkernel_neo_func.nii.gz'];
+    else
+        taskSNRpath   = [Path2ImgDir '/atlas/squaremaskkernel_func.nii.gz'];
+    end
+        
     taskSNR       = CleanNIFTI_spm(taskSNRpath);
     
-    if max(taskSNR)>1
+    if max(taskSNR)>1 || max(taskSNR)<1
         disp(['Max exceeds 1; max: ' num2str(taskSNR) ', we will scale back to [0 1]' ])
         taskSNR = taskSNR./max(taskSNR);
     end
