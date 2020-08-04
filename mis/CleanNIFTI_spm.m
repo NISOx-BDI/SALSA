@@ -119,9 +119,14 @@ if ischar(V0)
         end
         
         Vmask   = spm_vol(randtempfilename);
+        
         V2        = spm_read_vols(Vmask);
         dims      = Vmask(1).private.dat.dim;
-        TR        = Vmask(1).private.timing.tspace;
+        if isfield(Vmask(1).private.timing,'tspace')
+            TR        = Vmask(1).private.timing.tspace;
+        else
+            TR        = 0;
+        end
         voxelsize = [abs(diag(Vmask(1).mat(1:3,1:3)))' TR];
         Stat.spmV = Vmask;
         %[V2,dims,voxelsize] = read_avw(V0);
