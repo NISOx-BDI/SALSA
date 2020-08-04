@@ -269,6 +269,7 @@ if strcmpi(TaskType,'roi')
     EDXtmp        = (EDXtmp./std(EDXtmp));
     faketask      = (std(Yroi).*EDXtmp);
     Yroit         = Yroi + faketask.*taskSNR;
+
 elseif strcmpi(TaskType,'kernel')
     if strcmpi(COHORT,'NEO')
         ROIfile = [Path2ImgDir '/atlas/squaremaskkernel_neo_func_mask.nii.gz'];
@@ -280,10 +281,14 @@ elseif strcmpi(TaskType,'kernel')
     Idx_roi       = Idx_roi{1};
     Yroi          = Y(:,Idx_roi);
     
+    size(Yroi)
+    
     EDXtmp        = EDX;
     EDXtmp        = EDXtmp-mean(EDXtmp); 
     EDXtmp        = (EDXtmp./std(EDXtmp));
     faketask      = (std(Yroi).*EDXtmp);
+    
+    size(faketask)
     
     if strcmpi(COHORT,'NEO')
         taskSNRpath   = [Path2ImgDir '/atlas/squaremaskkernel_neo_func.nii.gz'];
@@ -292,6 +297,8 @@ elseif strcmpi(TaskType,'kernel')
     end
         
     taskSNR       = CleanNIFTI_spm(taskSNRpath);
+    
+    size(taskSNR)
     
     if max(taskSNR)>1 || max(taskSNR)<1
         disp(['Max exceeds 1; max: ' num2str(taskSNR) ', we will scale back to [0 1]' ])
