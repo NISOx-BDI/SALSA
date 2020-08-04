@@ -282,6 +282,7 @@ elseif strcmpi(TaskType,'kernel')
     Yroi          = Y(:,Idx_roi);
     
     size(Yroi)
+    size(Idx_roi)
     
     EDXtmp        = EDX;
     EDXtmp        = EDXtmp-mean(EDXtmp); 
@@ -307,12 +308,16 @@ elseif strcmpi(TaskType,'kernel')
     
     Yroit         = Yroi + faketask.*taskSNR';
     
+    size(Yroit)
+    
 else
     error('Unrecog option.')
 end
 
 % Put back the ROI back into Y
 Y(:,Idx_roi)  = Yroit;
+
+disp('Task was injected.')
 
 % ------------------------------------------------------------------------
 
