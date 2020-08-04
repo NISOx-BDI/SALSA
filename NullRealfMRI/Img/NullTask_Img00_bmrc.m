@@ -280,17 +280,12 @@ elseif strcmpi(TaskType,'kernel')
     [~,Idx_roi]   = MaskImg(Y',ROIfile,InputImgStat); % Time series in WM 
     Idx_roi       = Idx_roi{1};
     Yroi          = Y(:,Idx_roi);
-    
-    size(Yroi)
-    size(Idx_roi)
-    
+        
     EDXtmp        = EDX;
     EDXtmp        = EDXtmp-mean(EDXtmp); 
     EDXtmp        = (EDXtmp./std(EDXtmp));
     faketask      = (std(Yroi).*EDXtmp);
-    
-    size(faketask)
-    
+        
     if strcmpi(COHORT,'NEO')
         taskSNRpath   = [Path2ImgDir '/atlas/squaremaskkernel_neo_func.nii.gz'];
     else
@@ -299,12 +294,15 @@ elseif strcmpi(TaskType,'kernel')
         
     taskSNR       = CleanNIFTI_spm(taskSNRpath);
     
-    size(taskSNR)
-    
     if max(taskSNR)>1 || max(taskSNR)<1
         disp(['Max exceeds 1; max: ' num2str(taskSNR) ', we will scale back to [0 1]' ])
         taskSNR = taskSNR./max(taskSNR);
     end
+    
+    size(faketask)
+    size(Yroi)
+    size(taskSNR)
+    size(faketask.*taskSNR')
     
     Yroit         = Yroi + faketask.*taskSNR';
     
