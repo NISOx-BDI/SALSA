@@ -118,7 +118,7 @@ disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
 
 % Directory 2 save the results
-Path2ImgResults=[PATH2AUX '/ExampleData/R.mpp/RNullfMRI_' SubID '_' SesID];
+Path2ImgResults=[Path2ImgResults '/' SubID '_' SesID];
 if ~exist(Path2ImgResults, 'dir')
 	mkdir(Path2ImgResults)
 	disp(['The directory: ' Path2ImgResults ' did not exists. I made one. '])
