@@ -152,7 +152,7 @@ disp('++++++++++++++++++++++++++++++++++++')
 % files to make thing easier + safer. 
 %[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
 
-path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '.txt'];
+path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt'];
 EDX = load(path2evs); 
 
 X = EDX;
