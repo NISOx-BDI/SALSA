@@ -2,19 +2,19 @@
 warning('off','all')
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-COHORT = 'ROCKLAND'; 
-TaskName = 'CHECKERBOARD'; 
-pwdmethod = 'gACFadjxACFadj2tT1S0P5'; %ACF AR-YW AR-W ARMAHR
-Mord      = 16; 
-lFWHM     = 5;
-SubID     = 'A00008399';
-SesID     = 'DS2'; 
-TR        = 0.645;
-icaclean  = 0;
-%TempTreMethod = 'spline'; 
-%NumTmpTrend   = 3;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% COHORT = 'ROCKLAND'; 
+% TaskName = 'CHECKERBOARD'; 
+% pwdmethod = 'gACFadjxACFadj2tT1S0P5'; %ACF AR-YW AR-W ARMAHR
+% Mord      = 16; 
+% lFWHM     = 5;
+% SubID     = 'A00008399';
+% SesID     = 'DS2'; 
+% TR        = 0.645;
+% icaclean  = 0;
+% %TempTreMethod = 'spline'; 
+% %NumTmpTrend   = 3;
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_ROCKLAND/R.PW/T900/ROCKLAND_645_900_ACFadjT0S0_AR--2_MA-0_FWHM5_hpfk_gsr0_aroma0/A00028150_DS
