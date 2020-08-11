@@ -166,6 +166,8 @@ if TempDerv
 
 end
 
+X(1:5,:)
+
 % Motion parameters ----------------------------------------
 if icaclean==-1; MParamNum = 0; end; 
 
