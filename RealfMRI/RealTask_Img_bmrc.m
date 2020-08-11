@@ -148,8 +148,12 @@ disp('++++++++++++ Construct a design matrix')
 disp('++++++++++++++++++++++++++++++++++++')
 
 %%% Generate a Design Matrix --------------------------------
+% This doesn't work on Octave because of textscan! So I'm gonna use text
+% files to make thing easier + safer. 
+%[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
 
-[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
+path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '.txt'];
+EDX = load(path2evs); 
 
 X = EDX;
 
