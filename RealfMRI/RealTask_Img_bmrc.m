@@ -546,7 +546,7 @@ end
 % MAT FILES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if SaveMatFileFlag
     GLM.df      = stat.df; 
-    GLM.X       = X;
+    %GLM.X       = X;
     GLM.C       = glmcont;
     GLM.EDtype  = EDtype;
     
