@@ -150,7 +150,8 @@ disp('++++++++++++++++++++++++++++++++++++')
 %%% Generate a Design Matrix --------------------------------
 
 [EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
-X                   = EDX;
+
+X = EDX;
 
 disp(['design updated, ' num2str(size(X,2))])
 
@@ -219,7 +220,7 @@ X           = [ones(T,1),X];
 glmcont     = zeros(1,size(X,2));
 if strcmpi(TaskName,'CHECKERBOARD') && strcmpi(COHORT,'ROCKLAND')
     glmcont(2)          = 1; 
-    disp('+ single contrast for boxcar is set.')
+    disp(['+ single contrast for boxcar is set. TASK: ' TaskName])
 elseif strcmpi(TaskName,'MOTOR_LR') && strcmpi(COHORT,'tHCP')
     glmcont(2)          = 1; 
     disp('+ single contrast for boxcar is set.')    
