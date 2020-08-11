@@ -298,12 +298,7 @@ elseif strcmpi(TaskType,'kernel')
         disp(['Max exceeds 1; max: ' num2str(max(taskSNR)) ', we will scale back to [0 1]' ])
         taskSNR = taskSNR./max(taskSNR);
     end
-    
-    size(faketask)
-    size(Yroi)
-    size(taskSNR)
-    size(faketask.*taskSNR')
-    
+        
     Yroit         = Yroi + faketask.*taskSNR';
     
     size(Yroit)
