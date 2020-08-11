@@ -70,9 +70,7 @@ if strcmpi(COHORT,'ROCKLAND')
     Path2MC      = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
     
     Path2Event = [Path2ImgDir '/sub-' SubID '_ses-' SesID '_' EDtype '_events.tsv']; 
-    [EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
-    X   = EDX;
-    
+
 elseif strcmpi(COHORT,'tHCP')
     TaskName = SesID; 
     EDtype = ['task-' TaskName '_acq-' num2str(TR*1000)];
@@ -151,35 +149,8 @@ disp('++++++++++++++++++++++++++++++++++++')
 
 %%% Generate a Design Matrix --------------------------------
 
-% if strcmpi(EDtype,'boxcar')
-%     BCl = 20;
-%     EDX = GenerateED(BCl,T,TR,fix(T/15)); 
-%     EDX = EDX - mean(EDX); 
-% elseif strcmpi(EDtype,'er')
-% %     BCl = 0;
-% %     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-% %     EDX = load(path2evs);
-% %     disp(['Paradigm comes from: ' path2evs])
-%     BCl = 10; 
-%     [EDX1,EDX2] = Generate2ER(T,TR,1,BCl);
-%     EDX = [EDX1,EDX2]; 
-% elseif strcmpi(EDtype,'erf')
-%     BCl = 0;
-%     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-%     EDX = load(path2evs);    
-%     disp(['Paradigm comes from: ' path2evs])
-% elseif strcmpi(EDtype,'RegpEV')
-%     BCl = 0;
-%     path2evs=[PATH2AUX '/mis/EVs/RegpEV_' COHORT '/RegpEV_' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-%     EDX = load(path2evs);    
-%     disp(['Paradigm comes from: ' path2evs])
-%     nEDX = size(EDX,2);
-% elseif strcmpi(EDtype,'ORPE')
-%     BCl  = 0;
-%     EDX  = GenerateORPE(T,TR,1);
-%     nEDX = size(EDX,2);
-%     disp('Paradigm was set to be One Regressor Per Event.')
-% end
+[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
+X                   = EDX;
 
 disp(['design updated, ' num2str(size(X,2))])
 
@@ -239,14 +210,13 @@ disp(['Detrending: ' TempTreMethod ',param: ' num2str(NumTmpTrend)])
 X           = [X,TempTrend];
 disp(['design updated, ' num2str(size(X,2))])
 
-% Centre the design  ----------------------------------
-X           = X - mean(X); % demean everything 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FIT A MODEL TO THE ACd DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-X                  = [ones(T,1),X];
-glmcont            = zeros(1,size(X,2));
-
+% Centre the design  ----------------------------------
+X           = X - mean(X); % demean everything 
+X           = [ones(T,1),X];
+glmcont     = zeros(1,size(X,2));
 if strcmpi(TaskName,'CHECKERBOARD') && strcmpi(COHORT,'ROCKLAND')
     glmcont(2)          = 1; 
     disp('+ single contrast for boxcar is set.')
@@ -254,6 +224,7 @@ elseif strcmpi(TaskName,'MOTOR_LR') && strcmpi(COHORT,'tHCP')
     glmcont(2)          = 1; 
     disp('+ single contrast for boxcar is set.')    
 end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PREWHITEN THE RESIDULAS & ESTIMATE BIAS AND CPS %%%%%%%%%%%%%%%%%%%%%%%
