@@ -77,7 +77,7 @@ if strcmpi(COHORT,'ROCKLAND')
     Path2Event = [Path2ImgDir '/sub-' SubID '_ses-' SesID '_' EDtype '_events.tsv']; 
 
 elseif strcmpi(COHORT,'tHCP')
-    TaskName = SesID; 
+    %TaskName = SesID; 
     EDtype = ['task-' TaskName '_acq-' num2str(TR*1000) StimulName];
     Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/' SubID '_3T_tfMRI_' SesID '_mpp'];
@@ -162,6 +162,8 @@ if strcmpi(COHORT,'ROCKLAND')
 elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'MOTOR') 
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt']
     EDX = load(path2evs); 
+else
+    error('Unrecog task.')
 end
 
 X = EDX;
@@ -238,7 +240,9 @@ if strcmpi(TaskName,'CHECKERBOARD') && strcmpi(COHORT,'ROCKLAND')
     disp(['+ single contrast for boxcar is set. TASK: ' TaskName])
 elseif strcmpi(TaskName,'MOTOR') && strcmpi(COHORT,'tHCP')
     glmcont(2)          = 1; 
-    disp('+ single contrast for boxcar is set.')    
+    disp('+ single contrast for boxcar is set.')   
+else
+    error('Unrecog task.')
 end
 
 
