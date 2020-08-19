@@ -78,7 +78,7 @@ if strcmpi(COHORT,'ROCKLAND')
 
 elseif strcmpi(COHORT,'tHCP')
     TaskName = SesID; 
-    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000) StimulName]
+    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000) StimulName];
     Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/' SubID '_3T_tfMRI_' SesID '_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/' SubID '_3T_T1w_MPR1_func_seg.nii.gz'];
@@ -157,10 +157,10 @@ disp('++++++++++++++++++++++++++++++++++++')
 % files to make thing easier + safer. 
 %[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
 if strcmpi(COHORT,'ROCKLAND')
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt'];
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt']
     EDX = load(path2evs); 
 elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'MOTOR') 
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt'];
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt']
     EDX = load(path2evs); 
 end
 
