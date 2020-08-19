@@ -160,7 +160,7 @@ if strcmpi(COHORT,'ROCKLAND')
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt']
     EDX = load(path2evs); 
 elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'MOTOR') 
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt']
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_event.txt']
     EDX = load(path2evs); 
 else
     error('Unrecog task.')
