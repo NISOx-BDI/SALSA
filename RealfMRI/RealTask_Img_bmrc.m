@@ -58,7 +58,7 @@ addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'))
 
 disp('=====SET UP PATHS =============================')
 
-if exist('StimulName','var') || ~isempty(StimulName) || StimulName~=0 
+if exist('StimulName','var') || ~isempty(StimulName) && StimulName~=0 
     StimulName = ['_' StimulName];
 else
     StimulName = '';
@@ -78,7 +78,7 @@ if strcmpi(COHORT,'ROCKLAND')
 
 elseif strcmpi(COHORT,'tHCP')
     TaskName = SesID; 
-    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000) StimulName];
+    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000) StimulName]
     Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/' SubID '_3T_tfMRI_' SesID '_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/' SubID '_3T_T1w_MPR1_func_seg.nii.gz'];
