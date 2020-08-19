@@ -236,7 +236,7 @@ glmcont     = zeros(1,size(X,2));
 if strcmpi(TaskName,'CHECKERBOARD') && strcmpi(COHORT,'ROCKLAND')
     glmcont(2)          = 1; 
     disp(['+ single contrast for boxcar is set. TASK: ' TaskName])
-elseif strcmpi(TaskName,'MOTOR_LR') && strcmpi(COHORT,'tHCP')
+elseif strcmpi(TaskName,'MOTOR') && strcmpi(COHORT,'tHCP')
     glmcont(2)          = 1; 
     disp('+ single contrast for boxcar is set.')    
 end
