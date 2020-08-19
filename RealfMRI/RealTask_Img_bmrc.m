@@ -58,10 +58,15 @@ addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'))
 
 disp('=====SET UP PATHS =============================')
 
+if exist('StimulName','var') || ~isempty(StimulName) || StimulName~=0 
+    StimulName = ['_' StimulName];
+else
+    StimulName = '';
+end
 
 if strcmpi(COHORT,'ROCKLAND')
     %task-CHECKERBOARD_acq-645
-    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000)]; 
+    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000) StimulName]; 
     Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/sub-' SubID '_ses-' SesID '_' EDtype '_bold_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/sub-' SubID '_ses-' SesID '_T1w_func_seg.nii.gz'];
@@ -73,7 +78,7 @@ if strcmpi(COHORT,'ROCKLAND')
 
 elseif strcmpi(COHORT,'tHCP')
     TaskName = SesID; 
-    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000)];
+    EDtype = ['task-' TaskName '_acq-' num2str(TR*1000) StimulName];
     Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/' SubID '_3T_tfMRI_' SesID '_mpp'];
     SEGmaskinEPI = [Path2ImgDir '/seg/' SubID '_3T_T1w_MPR1_func_seg.nii.gz'];
@@ -151,9 +156,13 @@ disp('++++++++++++++++++++++++++++++++++++')
 % This doesn't work on Octave because of textscan! So I'm gonna use text
 % files to make thing easier + safer. 
 %[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
-
-path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt'];
-EDX = load(path2evs); 
+if strcmpi(COHORT,'ROCKLAND')
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt'];
+    EDX = load(path2evs); 
+elseif strcmpi(COHORT,'tHCP')
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '_event.txt'];
+    EDX = load(path2evs); 
+end
 
 X = EDX;
 
