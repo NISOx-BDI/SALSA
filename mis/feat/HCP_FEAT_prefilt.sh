@@ -10,10 +10,9 @@ module load fsl/6.0.3
 COHORT=$1
 SubID=$2
 SesID=$3
-AQLAB=$4
 
 #example:
-# BIDS_FEAT_prefilt.sh ROCKLAND A00028429 DS2 645
+# HCP_FEAT_prefilt.sh HCP 103818 MOTOR_LR
 
 #TR=$4
 
@@ -34,14 +33,23 @@ coblar=0
 
 ImageDir="/well/nichols/users/scf915/${COHORT}/raw/sub-${SubID}/ses-${SesID}"
 
+
+if [[ $SesID == *REST* ]]; then
+	DataType=rfMRI
+else
+	DataType=tfMRI
+fi
+
+echo $DataType
+
 if [ $COHORT == "ROCKLAND" ]; then
 	#FUNCIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
 	FUNIMGNAME=
 	FUNCIMG=${ImageDir}/func/${FUNIMGNAME}
 	ANATIMGNAME=sub-${SubID}_ses-${SesID}_T1w
-elif [ $COHORT == "HCP" ]; then
+elif [ $COHORT == "HCP" ] || [ $COHORT == "tHCP" ]; then
         #FUNCIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
-        FUNIMGNAME=${SubID}_3T_rfMRI_${SesID}
+        FUNIMGNAME=${SubID}_3T_${DataType}_${SesID}
         ANATIMGNAME=${SubID}_3T_T1w_MPR1
 fi
 

@@ -15,14 +15,12 @@ AQLAB=$4
 #example:
 # BIDS_FEAT_prefilt.sh ROCKLAND A00028429 DS2 645
 
-#TR=$4
-
-betflag=0
-flag_feat1=0
+betflag=1
+flag_feat1=1
 flag_fast=1
-flag_feat2=0
+flag_feat2=1
 flag_fnirt1=1
-flag_smooth=0
+flag_smooth=1
 flag_icaaroma=0
 
 #module add fsl
@@ -35,7 +33,8 @@ coblar=0
 ImageDir="/well/nichols/users/scf915/${COHORT}/raw/sub-${SubID}/ses-${SesID}"
 
 #FUNCIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
-FUNIMGNAME=sub-${SubID}_ses-${SesID}_task-rest_acq-${AQLAB}_bold
+FUNIMGNAME=sub-${SubID}_ses-${SesID}_${AQLAB}_bold
+
 FUNCIMG=${ImageDir}/func/${FUNIMGNAME}
 
 ANATIMGNAME=sub-${SubID}_ses-${SesID}_T1w
