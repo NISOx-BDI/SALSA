@@ -163,12 +163,15 @@ elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'MOTOR')
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_event.txt']
     EDX = load(path2evs); 
 elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'GAMBLING') 
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_loss_event.txt']
-    EDX0 = load(path2evs);     
-    
+%     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_loss_event.txt']
+%     EDX0 = load(path2evs);   
+%     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event.txt']
+%     EDX1 = load(path2evs);
+%     EDX = [EDX0,EDX1];
+% See HCP task paper -- reward vs punishment doesn't work
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event.txt']
-    EDX1 = load(path2evs);
-    EDX = [EDX0,EDX1];
+    EDX = load(path2evs);
+    
 else
     error('Unrecog task.')
 end
@@ -249,8 +252,11 @@ elseif strcmpi(TaskName,'MOTOR') && strcmpi(COHORT,'tHCP')
     glmcont(2)          = 1; 
     disp('+ single contrast for boxcar is set.')   
 elseif strcmpi(TaskName,'GAMBLING') && strcmpi(COHORT,'tHCP')
-    glmcont([2 3])          = [1 -1]; 
-    disp('+ two task, contrasted again each other')      
+% See HCP task paper -- reward vs punishment doesn't work
+%     glmcont([2 3])          = [1 -1]; 
+%     disp('+ two task, contrasted again each other')      
+    glmcont(2)          = 1; 
+    disp('+ single contrast for boxcar is set.')   
 else
     error('Unrecog task.')
 end
