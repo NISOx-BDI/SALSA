@@ -163,10 +163,10 @@ elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'MOTOR')
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_event.txt']
     EDX = load(path2evs); 
 elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'GAMBLING') 
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_loss_event_event.txt']
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_loss_event.txt']
     EDX0 = load(path2evs);     
     
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event_event.txt']
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event.txt']
     EDX1 = load(path2evs);
     EDX = [EDX0,EDX1];
 else
