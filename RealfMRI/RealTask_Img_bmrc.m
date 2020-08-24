@@ -162,6 +162,13 @@ if strcmpi(COHORT,'ROCKLAND')
 elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'MOTOR') 
     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_event.txt']
     EDX = load(path2evs); 
+elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'GAMBLING') 
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_loss_event_event.txt']
+    EDX0 = load(path2evs);     
+    
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event_event.txt']
+    EDX1 = load(path2evs);
+    EDX = [EDX0,EDX1];
 else
     error('Unrecog task.')
 end
@@ -181,7 +188,7 @@ if TempDerv
 
 end
 
-X(1:40,:)
+%X(1:40,:)
 
 % Motion parameters ----------------------------------------
 if icaclean==-1; MParamNum = 0; end; 
@@ -241,6 +248,9 @@ if strcmpi(TaskName,'CHECKERBOARD') && strcmpi(COHORT,'ROCKLAND')
 elseif strcmpi(TaskName,'MOTOR') && strcmpi(COHORT,'tHCP')
     glmcont(2)          = 1; 
     disp('+ single contrast for boxcar is set.')   
+elseif strcmpi(TaskName,'GAMBLING') && strcmpi(COHORT,'tHCP')
+    glmcont([2 3])          = [1 -1]; 
+    disp('+ two task, contrasted again each other')      
 else
     error('Unrecog task.')
 end
