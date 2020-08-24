@@ -169,7 +169,7 @@ elseif strcmpi(COHORT,'tHCP') && strcmpi(TaskName,'GAMBLING')
 %     EDX1 = load(path2evs);
 %     EDX = [EDX0,EDX1];
 % See HCP task paper -- reward vs punishment doesn't work
-    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event.txt']
+    path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event_event.txt']
     %path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' TaskName '/' EDtype '_win_event.txt']
     EDX = load(path2evs);
     
