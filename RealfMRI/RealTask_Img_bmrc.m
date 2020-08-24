@@ -58,7 +58,7 @@ addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'))
 
 disp('=====SET UP PATHS =============================')
 
-if exist('StimulName','var') || ~isempty(StimulName) && StimulName~=0 
+if ~isempty(StimulName) || StimulName~=0 
     StimulName = ['_' StimulName];
 else
     StimulName = '';
