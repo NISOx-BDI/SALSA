@@ -544,6 +544,10 @@ disp('++++++++++++Save the results.')
 disp('++++++++++++++++++++++++++++++++++++')
 
 if SaveImagesFlag
+
+% Change from S.E to var
+wvc = wse.^2;
+    
     % 3D IMAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if ~strcmpi(EDtype,'ORPE')
 %         VariableList = {'cbhat','se','tv',...
@@ -551,13 +555,13 @@ if SaveImagesFlag
 %             'acl','wacl',...
 %             'cpz','wcpz',...
 %             'ar1','war1'};
-        VariableList = {'cbhat','Wcbhat','tv','wtv','wzv','zv'};        
+        VariableList = {'cbhat','Wcbhat','tv','wtv','wzv','zv','wvc'};        
     else
 %         VariableList = {'cbhat','se','tv',...
 %             'Wcbhat','wse','wtv',...
 %             'acl','wacl',...
 %             'ar1','war1'};
-        VariableList = {'cbhat','Wcbhat','tv','wtv','wzv','zv'};        
+        VariableList = {'cbhat','Wcbhat','tv','wtv','wzv','zv','wvc'};        
     end
     
     OutputImgStat            = InputImgStat.spmV(1);
