@@ -7,7 +7,7 @@ outp="/well/nichols/users/scf915/${CohortID}/raw"
 
 mkdir -p $outp
 
-ImgTyp=REST1400 #RESTCAP #REST645
+ImgTyp=CHECKERBOARD645 #REST1400 #RESTCAP #REST645
 
 python3 download_rockland_raw_bids.py -o $outp -e ${ImgTyp} -t func -v DS2
 
