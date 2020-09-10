@@ -13,22 +13,31 @@ module load fsl
 #EDtype="task-${TaskName}_acq-${TR}"
 
 ####
+#COHORT=tHCP
+#T=284
+#TRs=0.72 #2.5 # in second
+#NSUB=25
+#TaskName=MOTOR
+#StimulName=lh
+#TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
+#EDtype="task-${TaskName}_acq-${TR}_${StimulName}"
+######################################
 COHORT=tHCP
-T=284
+T=253
 TRs=0.72 #2.5 # in second
 NSUB=25
-TaskName=MOTOR
-StimulName=lh
+TaskName="GAMBLING"
 TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
-EDtype="task-${TaskName}_acq-${TR}_${StimulName}"
+EDtype="task-${TaskName}_acq-${TR}"
 ######################################
+
 
 GSRFLAG=0
 ICAFLAG=0
 
 FWHMsize=0
 
-QSUBFLAG=1
+QSUBFLAG=0
 
 TempTreMethodLIST=(hpf hpfk dct poly) #(hpf hpfc hpfk dct spline poly)
 
@@ -47,14 +56,20 @@ if [ $COHORT == "Cambridge" ];then
 elif [ $COHORT == "Beijing" ]; then
 	ACMODE=(5 10 $(echo "sqrt($T)" | bc) $(echo "2*sqrt($T)" | bc) -2)
 
-elif [ $COHORT == "ROCKLAND" ] && [ $T==240 ] && [ $TaskName=="CHECKERBOARD" ]; then
+elif [ $COHORT == "ROCKLAND" ] && [ $T == 240 ] && [ $TaskName == "CHECKERBOARD" ]; then
 	ACMODE=(5 10 $(echo "sqrt($T)" | bc) $(echo "2*sqrt($T)" | bc) -2)
 	echo "))))))))))) ROCKLAND TASK ((((((((((((( "
 	TempTrendP=(100 90 3 2)
-elif [ $COHORT == "tHCP" ] && [ $TaskName=="MOTOR" ]; then
+
+elif [ $COHORT == "tHCP" ] && [ $TaskName == "MOTOR" ]; then
         ACMODE=(5 10 $(echo "sqrt($T)" | bc) $(echo "2*sqrt($T)" | bc) -2)
 	TempTrendP=(100 90 4 2)
-        echo "))))))))))) ROCKLAND TASK ((((((((((((( "
+        echo "))))))))))) MOTOR ((((((((((((( "
+
+elif [ $COHORT == "tHCP" ] && [ $TaskName == "GAMBLING" ]; then
+        ACMODE=(5 10 $(echo "sqrt($T)" | bc) $(echo "2*sqrt($T)" | bc) -2)
+        TempTrendP=(100 90 3 2)
+        echo "))))))))))) GAMBLING ((((((((((((( "
 else
 	ACMODE=(5 10 15 $(echo "sqrt($T)" | bc) $(echo "2*sqrt($T)" | bc) -2)
 fi
@@ -78,7 +93,7 @@ fi
 
 ############################################
 #/users/nichols/scf915/bin/FILM2/RealfMRI
-SUBMITDIR=/users/nichols/scf915/bin/FILM2/RealfMRI/${COHORT}_${T}_${TR}_${TaskName}_gsr${GSRFLAG}_aroma${ICAFLAG}_TFCE_Submitters
+SUBMITDIR=/users/nichols/scf915/bin/FILM2/RealfMRI/${COHORT}_${T}_${TR}_${TaskName}_gsr${GSRFLAG}_aroma${ICAFLAG}_FLAME1_Submitters
 mkdir -p ${SUBMITDIR}
 
 NumJob=0
@@ -121,8 +136,8 @@ cat > $SubmitterFileName << EOF
 #$ -cwd
 #$ -q short.qe # short.qc@@short.hge #short.qe    # short.qc@@short.hge
 #$ -pe shmem ${NCORES}
-#$ -o ${OpLog}/${JobName}_TFCE_\\\$JOB_ID.out
-#$ -e ${OpLog}/${JobName}_TFCE_\\\$JOB_ID.err
+#$ -o ${OpLog}/${JobName}_FLAME1_\\\$JOB_ID.out
+#$ -e ${OpLog}/${JobName}_FLAME1_\\\$JOB_ID.err
 #$ -N ${JobName}
 
 export OMP_NUM_THREADS=${NCORES}
@@ -141,21 +156,29 @@ cd \${OCTSCRPT}
 
 echo \${OCTSCRPT}
 
-## TFCE + Randomise
+##
 ConDir="/well/nichols/users/scf915/${COHORT}/R.PW/${COHORT}_${TR}_${T}_${TaskName}_${METH_ID}_AR-${ARO}_MA-0_FWHM${FWHMsize}_${TempTreMethod}_gsr0_aroma0"
 
-mkdir -p \${ConDir}/TFCE
+LEVEL2DIR=\${ConDir}/LEVEL2
 
-in4dvol=\${ConDir}/TFCE/ED${EDtype}_${METH_ID}_AR${ARO}_MA0_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_Wcbhat_4D
-out4dvol=\${ConDir}/TFCE/ED${EDtype}_${METH_ID}_AR${ARO}_MA0_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_Wcbhat
+#mkdir -p \${LEVEL2DIR}/FLAME1
+rm -r \${LEVEL2DIR}/FLAME1 # clean now, so when the flameo gets to it, doesnt make a duplicate
+in4dvol=\${LEVEL2DIR}/ED${EDtype}_${METH_ID}_AR${ARO}_MA0_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_Wcbhat_4D
+in4dvarcopevol=\${LEVEL2DIR}/ED${EDtype}_${METH_ID}_AR${ARO}_MA0_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_wvc_4D
+#out4dvol=\${LEVEL2DIR}/FLAME1/ED${EDtype}_${METH_ID}_AR${ARO}_MA0_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_Wcbhat
+randlog=\${LEVEL2DIR}/FLAME1/ED${EDtype}_${METH_ID}_AR${ARO}_MA0_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_Wcbhat_flame1.log
 
-randlog=\${ConDir}/TFCE/ED${EDtype}_${METH_ID}_AR${ARO}_MA0_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_Wcbhat_TFCE.log
+echo "FLAME Log: \$randlog"
 
-echo "TFCE Log: \$randlog"
+sh /users/nichols/scf915/bin/FILM2/mis/run_1sample_flame1.sh \$in4dvol \$in4dvarcopevol >> \$randlog
 
-${FSLDIR}/bin/randomise -i \$in4dvol \
--o \$out4dvol \
--1 -T -x >> \${randlog}
+#flameo --cope=EDtask-GAMBLING_acq-720_ACF_AR30_MA0_FWHM0_dct3_Wcbhat_4D.nii.gz \
+#--varcope=EDtask-GAMBLING_acq-720_ACF_AR30_MA0_FWHM0_dct3_wvc_4D.nii.gz \
+#--runmode=flame1 \
+#--dm=design.mat \
+#--tc=cont.mat \
+#--mask=mask.nii.gz \
+#--cs=design.grp
 
 
 # The stat file
