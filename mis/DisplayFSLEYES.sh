@@ -4,19 +4,19 @@ set -e
 # SA,Ox,2020
 
 ######################################
-COHORT=ROCKLAND
-T=240
-TRs=0.645 #2.5 # in second
-NSUB=25
-TaskName=CHECKERBOARD
-StimulName=""
-######################################
-#COHORT=tHCP
-#T=284
-#TRs=0.72 #2.5 # in second
+#COHORT=ROCKLAND
+#T=240
+#TRs=0.645 #2.5 # in second
 #NSUB=25
-#TaskName=MOTOR
-#StimulName=lh
+#TaskName=CHECKERBOARD
+#StimulName=""
+######################################
+COHORT=tHCP
+T=284
+TRs=0.72 #2.5 # in second
+NSUB=25
+TaskName=MOTOR
+StimulName=lh
 ######################################
 #COHORT=tHCP
 #T=253
@@ -26,8 +26,8 @@ StimulName=""
 #StimulName=""
 ######################################
 
-FWHMl=5
-Inf2Method=TFCE #TFCE FLAME1
+FWHMl=0
+Inf2Method=FLAME1 #TFCE FLAME1
 
 # -----------------------------------------------------------
 DataDir="/well/nichols/users/scf915/${COHORT}"
