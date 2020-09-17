@@ -1,9 +1,20 @@
 clear
 
-COHORT          = 'NEO'; 
+
+#COHORT          = 'NEO'; 
+#lFWHM           = 0; 
+#icaclean        = 0; 
+#EDtype          = 'ER'; 
+#COHORTDIR='/well/nichols/users/kfh142/data/baby/neofmri_2nd_release_rerun2/';
+
+
+COHORT          = 'HCP'; 
 lFWHM           = 0; 
 icaclean        = 0; 
-EDtype          = 'ERF'; 
+EDtype          = 'ER'; 
+COHORTDIR=['/well/nichols/users/scf915/' COHORT ];
+
+
 TempTreMethod   = 'hpf';
 
 MParamNum           = 24;
@@ -22,20 +33,11 @@ addpath (fullfile ('/users/nichols/scf915', 'spm12-r7771'));
 
 disp('=====SET UP PATHS =============================')
 
-%Path2ImgRaw=[PATH2AUX '/ExampleData/R.mpp'];
-%Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/ROCKLAND/sub-' SubID '/ses-' SesID '/sub-' SubID '_ses-' SesID '_task-rest_acq-645_bold_mpp'];
-%Path2ImgDir = ['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/' COHORT '/' SubID '_3T_rfMRI_' SesID '_mpp/'];
-COHORTDIR='/well/nichols/users/kfh142/data/baby/neofmri_2nd_release_rerun2/';
-
 load(['/well/nichols/users/scf915/' COHORT '/' COHORT '_subid.mat'])
 load(['/well/nichols/users/scf915/' COHORT '/' COHORT '_sesid.mat'])
 
 SubList = participants;
 SesList = ses;
-
-%SubList = {'CC00649XX23','CC00698XX23','CC00789XX23','CC00797XX23','CC00839XX23','CC00847XX23'};
-%SesList = {'191201','220400','21110','12110','23710','26910'};
-
 
 s_cnt0 = 1; 
 for s_cnt = 1:numel(SubList)
@@ -115,7 +117,7 @@ for s_cnt = 1:numel(SubList)
     disp(['Motion params: ' Path2MC])
 
     % Directory 2 save the results
-    Path2ImgResults='/well/nichols/users/scf915/NEO/R.PW/ImgSpecCheck';
+    Path2ImgResults=['/well/nichols/users/scf915/' COHORT '/R.PW/ImgSpecCheck'];
     if ~exist(Path2ImgResults, 'dir')
         mkdir(Path2ImgResults)
         disp(['The directory: ' Path2ImgResults ' did not exists. I made one. '])
