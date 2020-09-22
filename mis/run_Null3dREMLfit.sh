@@ -6,11 +6,13 @@ TRs=0.645
 T=900
 SubID="A00031604"
 SesID="DS2"
-FWHMsize=0
+FWHMsize=5
 
 
 GSRFLAG=0
 ICAFLAG=0
+
+EDtype="ER"
 
 ###########################################################################
 ###########################################################################
@@ -21,9 +23,32 @@ TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
 AFNI_SPM_singularity_image=/apps/singularity/afni-r-python3-2020-03-26-v1.sif
 AFNI_bin=/opt/afni-latest
 
-COHORTDIR=/well/nichols/users/scf915/${COHORT}
-BOLDDIR=${COHORTDIR}/R_mpp/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-${SesID}_task-rest_acq-${TR}_bold_mpp/
-BOLDIMG=${BOLDDIR}/prefiltered_func_data_bet.nii.gz
+#----
+
+if [ $COHORT == ROCKLAND ]; then
+	COHORTDIR=/well/nichols/users/scf915/${COHORT}
+	BOLDDIR=${COHORTDIR}/R_mpp/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-${SesID}_task-rest_acq-${TR}_bold_mpp/
+elif [ $COHORT == Beijing ]; then
+	COHORTDIR=/well/nichols/users/scf915/${COHORT}
+	Path2ImgRaw=${COHORTDIR}/R_mpp/sub-${SubID}/ses-${SesID}
+	BOLDDIR=${Path2ImgRaw}/${SubID}_3T_rfMRI_${SesID}_mpp
+elif [ $COHORT == HCP ]; then
+	COHORTDIR=/well/nichols/users/scf915/${COHORT}
+	Path2ImgRaw=${COHORTDIR}/R_mpp/sub-${SubID}/ses-${SesID}
+	BOLDDIR=${Path2ImgRaw}/${SubID}_3T_rfMRI_${SesID}_mpp
+elif [ $COHORT == NEO ]; then
+	COHORTDIR=/well/nichols/users/scf915/${COHORT}
+	Path2ImgRaw=$COHORTDIR/sub-${SubID}/ses-${SesID}
+else
+	echo "XXXXXSomething is wrong... "
+	exit 1
+fi
+
+prefix=''
+if [ $FWHMsize != 0 ]; then prefix=_fwhm${FWHMsize}; fi
+BOLDIMG=${BOLDDIR}/prefiltered_func_data_bet${prefix}.nii.gz
+
+echo $BOLDIMG
 
 tmpdir=$(mktemp -d)
 echo $tmpdir
@@ -35,7 +60,10 @@ stim_file_E2=$tmpdir/ROCKLAND_sub_${SubID}_T${T}_TR${TR}_E2.txt
 cat ${stim_file} | awk '{print $1}' > ${stim_file_E1}
 cat ${stim_file} | awk '{print $2}' > ${stim_file_E2}
 
-AFNIRESULTS=${COHORTDIR}/R.PW/${COHORT}_${TR}_${T}_3dREMLfit_FWHM${FWHMsize}_gsr${GSRFLAG}_aroma${ICAFLAG}
+ARO=1
+MAO=1
+TempTreMethod=poly
+AFNIRESULTS=${COHORTDIR}/R.PW/${COHORT}_${TR}_${T}_3dREMLfit_AR-${ARO}_MA-${MAO}_FWHM${FWHMsize}_${TempTreMethod}_gsr${GSRFLAG}_aroma${ICAFLAG}
 
 rm -rf ${AFNIRESULTS}
 mkdir -p ${AFNIRESULTS}
@@ -44,6 +72,8 @@ cd ${AFNIRESULTS}
 ###########################################################################
 ###########################################################################
 ###########################################################################
+
+# Later, makes this a bit more elegant...
 
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
 $AFNI_bin/3dDeconvolve \
