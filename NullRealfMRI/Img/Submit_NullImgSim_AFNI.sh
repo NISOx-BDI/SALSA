@@ -23,17 +23,17 @@ set -e
 #NSUB=51
 #EDtype="ER"
 
-COHORT=ROCKLAND
-T=900 #120
-TRs=0.645 #2.5 # in second
-NSUB=51
-EDtype="ER"
-
-#COHORT=NEO
-#T=2300 #120
-#TRs=0.392 #2.5 # in second
+#COHORT=ROCKLAND
+#T=900 #120
+#TRs=0.645 #2.5 # in second
 #NSUB=51
 #EDtype="ER"
+
+COHORT=NEO
+T=2300 #120
+TRs=0.392 #2.5 # in second
+NSUB=51
+EDtype="ER"
 
 #COHORT=HCP
 #T=1200 #120
@@ -47,7 +47,6 @@ GSRFLAG=0
 ICAFLAG=0
 
 FWHMsize=5
-
 QSUBFLAG=1
 
 ARO=1
