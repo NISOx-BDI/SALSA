@@ -15,7 +15,7 @@ export OMP_NUM_THREADS=4
 COHORTID=tHCP
 COHORTDIR=/well/nichols/users/scf915/${COHORTID}
 SubID=$(cat ${COHORTDIR}/${COHORTID}_subid.txt | awk {'print $1'} | sed "${SGE_TASK_ID}q;d")
-SesID=MOTOR_LR
+SesID=GAMBLING_LR
 
 echo ""
 echo "FEAT IS ON: ${COHORTID} ${SubID} ${SesID} ${TR} "
