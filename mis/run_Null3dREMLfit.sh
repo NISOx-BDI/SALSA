@@ -1,18 +1,30 @@
 #bin/bash
 set -e
 
-COHORT=ROCKLAND
-TRs=0.645
-T=900
-SubID="A00031604"
-SesID="DS2"
-FWHMsize=5
+COHORT=$1
+TRs=$2
+T=$3
+SubID=$4
+SesID=$5
+FWHMsize=$6
+GSRFLAG=$7 #useless but leave it
+ICAFLAG=$8 #useless but leave it
+Path2ImgResults=$9
+EDtype="ER"
 
+#COHORT=ROCKLAND
+#TRs=0.645
+#T=900
+#SubID="A00031604"
+#SesID="DS2"
+#FWHMsize=5
+#ARO=1
+#MAO=1
+#TempTreMethod=poly
+#AFNIRESULTS=${COHORTDIR}/R.PW/${COHORT}_${TR}_${T}_3dREMLfit_AR-${ARO}_MA-${MAO}_FWHM${FWHMsize}_${TempTreMethod}_gsr${GSRFLAG}_aroma${ICAFLAG}
 
 GSRFLAG=0
 ICAFLAG=0
-
-EDtype="ER"
 
 ###########################################################################
 ###########################################################################
@@ -24,29 +36,33 @@ AFNI_SPM_singularity_image=/apps/singularity/afni-r-python3-2020-03-26-v1.sif
 AFNI_bin=/opt/afni-latest
 
 #----
+prefix=''
+if [ $FWHMsize != 0 ]; then prefix=_fwhm${FWHMsize}; fi
 
 if [ $COHORT == ROCKLAND ]; then
 	COHORTDIR=/well/nichols/users/scf915/${COHORT}
 	BOLDDIR=${COHORTDIR}/R_mpp/sub-${SubID}/ses-${SesID}/sub-${SubID}_ses-${SesID}_task-rest_acq-${TR}_bold_mpp/
+	BOLDIMG=${BOLDDIR}/prefiltered_func_data_bet${prefix}.nii.gz
 elif [ $COHORT == Beijing ]; then
 	COHORTDIR=/well/nichols/users/scf915/${COHORT}
 	Path2ImgRaw=${COHORTDIR}/R_mpp/sub-${SubID}/ses-${SesID}
-	BOLDDIR=${Path2ImgRaw}/${SubID}_3T_rfMRI_${SesID}_mpp
+	BOLDDIR=${Path2ImgRaw}/rest_mpp
+	BOLDIMG=${BOLDDIR}/prefiltered_func_data_bet${prefix}.nii.gz
 elif [ $COHORT == HCP ]; then
 	COHORTDIR=/well/nichols/users/scf915/${COHORT}
 	Path2ImgRaw=${COHORTDIR}/R_mpp/sub-${SubID}/ses-${SesID}
 	BOLDDIR=${Path2ImgRaw}/${SubID}_3T_rfMRI_${SesID}_mpp
+	BOLDIMG=${BOLDDIR}/prefiltered_func_data_bet${prefix}.nii.gz
 elif [ $COHORT == NEO ]; then
-	COHORTDIR=/well/nichols/users/scf915/${COHORT}
-	Path2ImgRaw=$COHORTDIR/sub-${SubID}/ses-${SesID}
+#	COHORTDIR=/well/nichols/users/scf915/${COHORT}
+	COHORTDIR=/well/nichols/users/kfh142/data/baby/neofmri_2nd_release_rerun2/
+	BOLDDIR=$COHORTDIR/sub-${SubID}/ses-${SesID}
+	BOLDIMG=${BOLDDIR}/mcdc/func_mcdc_masked_brain${prefix}.nii.gz
+
 else
 	echo "XXXXXSomething is wrong... "
 	exit 1
 fi
-
-prefix=''
-if [ $FWHMsize != 0 ]; then prefix=_fwhm${FWHMsize}; fi
-BOLDIMG=${BOLDDIR}/prefiltered_func_data_bet${prefix}.nii.gz
 
 echo $BOLDIMG
 
@@ -60,12 +76,8 @@ stim_file_E2=$tmpdir/ROCKLAND_sub_${SubID}_T${T}_TR${TR}_E2.txt
 cat ${stim_file} | awk '{print $1}' > ${stim_file_E1}
 cat ${stim_file} | awk '{print $2}' > ${stim_file_E2}
 
-ARO=1
-MAO=1
-TempTreMethod=poly
-AFNIRESULTS=${COHORTDIR}/R.PW/${COHORT}_${TR}_${T}_3dREMLfit_AR-${ARO}_MA-${MAO}_FWHM${FWHMsize}_${TempTreMethod}_gsr${GSRFLAG}_aroma${ICAFLAG}
-
-rm -rf ${AFNIRESULTS}
+AFNIRESULTS=$Path2ImgResults/${SubID}_${SesID}
+rm -f ${AFNIRESULTS}/*
 mkdir -p ${AFNIRESULTS}
 cd ${AFNIRESULTS}
 
@@ -107,7 +119,9 @@ $AFNI_bin/3dDeconvolve \
 -stim_file 24 $BOLDDIR/mp/${COHORT}_SubID-${SubID}_ses-${SesID}_T${T}_TR${TR}_22.txt -stim_base 24 -stim_label 24 MP22 \
 -stim_file 25 $BOLDDIR/mp/${COHORT}_SubID-${SubID}_ses-${SesID}_T${T}_TR${TR}_23.txt -stim_base 25 -stim_label 25 MP23 \
 -stim_file 26 $BOLDDIR/mp/${COHORT}_SubID-${SubID}_ses-${SesID}_T${T}_TR${TR}_24.txt -stim_base 26 -stim_label 26 MP24 \
--glt 1 /users/nichols/scf915/bin/FILM2/mis/EVs/AFNIglt.txt -glt_label 1 'E1-E2'
+-glt 1 /users/nichols/scf915/bin/FILM2/mis/EVs/AFNIglts/${COHORT}_T${T}_TR${TR}_AFNIglt.txt -glt_label 1 'E1-E2'
+
+#/users/nichols/scf915/bin/FILM2/mis/EVs/AFNIglts/HCP_AFNIglt.txt
 
 # Copy a readable design matrix for sanity checks
 grep -v '^#' ${AFNIRESULTS}/Decon.xmat.1D > Xmat.txt
@@ -144,7 +158,7 @@ echo "Reorient everything to nifti and cleanup."
 
 # whitened residuals -------------------------------------
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
-$AFNI_bin/3dresample -orient RPI -inset ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_Rwherr+orig.HEAD -prefix sub-${SubID}_ses-${SesID}_Decon_Rwherr.nii.gz
+$AFNI_bin/3dresample -orient RPI -inset ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_Rwherr+orig.HEAD -prefix ${AFNIRESULTS}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_Rwherr.nii.gz
 
 # variance
 #singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
@@ -152,27 +166,27 @@ $AFNI_bin/3dresample -orient RPI -inset ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}
 
 # AutoReg Coeff -------------------------------------------
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
-$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[a]" -prefix ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar_AR.nii.gz -datum float -expr a
+$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[a]" -prefix ${AFNIRESULTS}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_REMLvar_AR.nii.gz -datum float -expr a
 
 # Moving Average Coeff
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
-$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[b]" -prefix ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar_MA.nii.gz -datum float -expr a
+$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[b]" -prefix ${AFNIRESULTS}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_REMLvar_MA.nii.gz -datum float -expr a
 
 # Lambda
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
-$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[lam]" -prefix ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar_LAM.nii.gz -datum float -expr a
+$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[lam]" -prefix ${AFNIRESULTS}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_REMLvar_LAM.nii.gz -datum float -expr a
 
 # Standard Deviation
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
-$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[StDev]" -prefix ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar_wstd.nii.gz -datum float -expr a
+$AFNI_bin/3dcalc -a ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REMLvar+orig"[StDev]" -prefix ${AFNIRESULTS}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_REMLvar_wstd.nii.gz -datum float -expr a
 
 # t-stat ----------------------------------------------------
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
-$AFNI_bin/3dresample -orient RPI -inset  ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REML+orig.HEAD  -prefix ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REML_wtv.nii.gz
+$AFNI_bin/3dresample -orient RPI -inset  ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_REML+orig.HEAD  -prefix ${AFNIRESULTS}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_REML_wtv.nii.gz
 
 # whitened betas
 singularity exec --cleanenv -B ${COHORTDIR} $AFNI_SPM_singularity_image \
-$AFNI_bin/3dresample -orient RPI -inset  ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_wbeta+orig.HEAD  -prefix ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_wbeta.nii.gz
+$AFNI_bin/3dresample -orient RPI -inset  ${AFNIRESULTS}/sub-${SubID}_ses-${SesID}_Decon_wbeta+orig.HEAD  -prefix ${AFNIRESULTS}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_wbeta.nii.gz
 
 # clean HEAD and BRIK files
 rm ${AFNIRESULTS}/*.HEAD ${AFNIRESULTS}/*.BRIK
