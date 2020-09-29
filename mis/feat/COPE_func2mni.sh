@@ -8,19 +8,19 @@ set -e
 #TaskName=CHECKERBOARD
 #NSUB=25
 ####################################
-#COHORT=tHCP
-#T=284
-#TRs=0.72
-#TaskName=MOTOR
-#NSUB=25
-#StimulName="_lh"
-###################################
 COHORT=tHCP
-T=253
+T=284
 TRs=0.72
-TaskName=GAMBLING
+TaskName=MOTOR
 NSUB=25
-StimulName=""
+StimulName="_lh"
+###################################
+#COHORT=tHCP
+#T=253
+#TRs=0.72
+#TaskName=GAMBLING
+#NSUB=25
+#StimulName=""
 ###################################
 
 FWHMsize=5
@@ -35,9 +35,9 @@ TR=$(echo $TRs*1000 | bc | awk -F'.' {'print $1'})
 EDtype="task-${TaskName}_acq-${TR}${StimulName}"
 EDtype_Rmpp="task-${TaskName}_acq-${TR}"
 
-METHODLIST=(ACF gFAST gACFadjxACFadj2tT1S0P5 AR-W)
+#METHODLIST=(ACF gFAST gACFadjxACFadj2tT1S0P5 AR-W)
 
-#METHODLIST=(AR-W)
+METHODLIST=(ACF)
 
 ARMODE=(1 2 5 10 20)
 
