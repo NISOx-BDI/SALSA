@@ -17,7 +17,7 @@ TRs=0.72 #2.5 # in second
 NSUB=25
 TaskName=MOTOR
 StimulName=lh
-######################################
+#######################################
 #COHORT=tHCP
 #T=253
 #TRs=0.72 #2.5 # in second
@@ -26,8 +26,8 @@ StimulName=lh
 #StimulName=""
 ######################################
 
-FWHMl=0
-Inf2Method=FLAME1 #TFCE FLAME1
+FWHMl=5
+Inf2Method=FLAME1 #TFCE #TFCE FLAME1
 
 # -----------------------------------------------------------
 DataDir="/well/nichols/users/scf915/${COHORT}"
@@ -46,13 +46,14 @@ if [ $Inf2Method == FLAME1 ]; then
 	${FSLDIR}/data/standard/MNI152_T1_2mm_brain.nii.gz \
 	${DataDir}/R.PW/${FileNameParent}_gACFadjxACFadj2tT1S0P5_AR--2_MA-0_FWHM${FWHMl}_hpfk_gsr0_aroma0/LEVEL2/${Inf2Method}/tstat1.nii.gz -dr ${LB} ${UB} -cm red \
 	${DataDir}/R.PW/${FileNameParent}_gFAST_AR-1_MA-0_FWHM${FWHMl}_dct_gsr0_aroma0/LEVEL2/${Inf2Method}/tstat1.nii.gz -dr ${LB} ${UB} -cm blue \
-	${DataDir}/R.PW/${FileNameParent}_AR-W_AR-1_MA-0_FWHM${FWHMl}_poly_gsr0_aroma0/LEVEL2/${Inf2Method}/tstat1.nii.gz -dr ${LB} ${UB} -cm green \
-	${DataDir}/R.PW/${FileNameParent}_ACF_AR-${ACFARO}_MA-0_FWHM${FWHMl}_hpf_gsr0_aroma0/LEVEL2/${Inf2Method}/tstat1.nii.gz -dr ${LB} ${UB} -cm yellow & 
-
+	${DataDir}/R.PW/${FileNameParent}_AR-W_AR-1_MA-0_FWHM${FWHMl}_poly_gsr0_aroma0/LEVEL2/${Inf2Method}/tstat1.nii.gz -dr ${LB} ${UB} -cm yellow \
+	${DataDir}/R.PW/${FileNameParent}_3dREMLfit_AR-1_MA-1_FWHM${FWHMl}_poly_gsr0_aroma0/LEVEL2/${Inf2Method}/tstat1.nii.gz -dr ${LB} ${UB} -cm pink \
+	${DataDir}/R.PW/${FileNameParent}_ACF_AR-${ACFARO}_MA-0_FWHM${FWHMl}_hpf_gsr0_aroma0/LEVEL2/${Inf2Method}/tstat1.nii.gz -dr ${LB} ${UB} -cm green &
 elif [ $Inf2Method == TFCE ]; then
 	${FSLDIR}/bin/fsleyes ${FSLDIR}/data/standard/MNI152_T1_2mm_brain.nii.gz \
 	${DataDir}/R.PW/${FileNameParent}_gACFadjxACFadj2tT1S0P5_AR--2_MA-0_FWHM${FWHMl}_hpfk_gsr0_aroma0/LEVEL2/${Inf2Method}/*_Wcbhat_tstat1.nii.gz -dr ${LB} ${UB} -cm red \
 	${DataDir}/R.PW/${FileNameParent}_gFAST_AR-1_MA-0_FWHM${FWHMl}_dct_gsr0_aroma0/LEVEL2/${Inf2Method}/*_Wcbhat_tstat1.nii.gz -dr ${LB} ${UB} -cm blue \
-	${DataDir}/R.PW/${FileNameParent}_AR-W_AR-1_MA-0_FWHM${FWHMl}_poly_gsr0_aroma0/LEVEL2/${Inf2Method}/*_Wcbhat_tstat1.nii.gz -dr ${LB} ${UB} -cm green \
-	${DataDir}/R.PW/${FileNameParent}_ACF_AR-${ACFARO}_MA-0_FWHM${FWHMl}_hpf_gsr0_aroma0/LEVEL2/${Inf2Method}/*_Wcbhat_tstat1.nii.gz -dr ${LB} ${UB} -cm yellow & 
+	${DataDir}/R.PW/${FileNameParent}_AR-W_AR-1_MA-0_FWHM${FWHMl}_poly_gsr0_aroma0/LEVEL2/${Inf2Method}/*_Wcbhat_tstat1.nii.gz -dr ${LB} ${UB} -cm yellow \
+	${DataDir}/R.PW/${FileNameParent}_3dREMLfit_AR-1_MA-1_FWHM${FWHMl}_poly_gsr0_aroma0/LEVEL2/${Inf2Method}/*_Wcbhat_tstat1.nii.gz -dr ${LB} ${UB} -cm pink \
+	${DataDir}/R.PW/${FileNameParent}_ACF_AR-${ACFARO}_MA-0_FWHM${FWHMl}_hpf_gsr0_aroma0/LEVEL2/${Inf2Method}/*_Wcbhat_tstat1.nii.gz -dr ${LB} ${UB} -cm green & 
 fi
