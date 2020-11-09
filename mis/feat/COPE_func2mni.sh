@@ -2,13 +2,15 @@
 
 set -e
 
-COHORT=ROCKLAND
-T=240
-TRs=0.645
-TaskName=CHECKERBOARD
-NSUB=25
-StimulName=""
-####################################
+module load fsl
+
+#COHORT=ROCKLAND
+#T=240
+#TRs=0.645
+#TaskName=CHECKERBOARD
+#NSUB=25
+#StimulName=""
+#####################################
 #COHORT=tHCP
 #T=284
 #TRs=0.72
@@ -16,15 +18,15 @@ StimulName=""
 #NSUB=25
 #StimulName="_lh"
 ###################################
-#COHORT=tHCP
-#T=253
-#TRs=0.72
-#TaskName=GAMBLING
-#NSUB=25
-#StimulName=""
+COHORT=tHCP
+T=253
+TRs=0.72
+TaskName=GAMBLING
+NSUB=25
+StimulName=""
 ###################################
 
-FWHMsize=5
+FWHMsize=0
 
 STRGDIR=/well/nichols/users/scf915
 COHORTDIR=${STRGDIR}/${COHORT}
@@ -38,7 +40,7 @@ EDtype_Rmpp="task-${TaskName}_acq-${TR}"
 
 #METHODLIST=(ACF gFAST gACFadjxACFadj2tT1S0P5 AR-W)
 
-METHODLIST=(3dREMLfit)
+METHODLIST=(3dREMLfit-NEGcor) #(3dREMLfit)
 
 ARMODE=(1 2 5 10 20)
 
@@ -57,7 +59,7 @@ else
 #	exit 1
 fi
 
-if [ ${#METHODLIST[@]} == 1 ] & [ $METHODLIST == '3dREMLfit' ]; then
+if [ ${#METHODLIST[@]} == 1 ] & [[ $METHODLIST == *"3dREMLfit"* ]]; then
 	TempTreMethodLIST=(poly)
 	TempTrendP=2
 #	if [ $COHORT == "ROCKLAND" ] && [ $T == "240" ] && [ $TaskName == "CHECKERBOARD" ]; then
@@ -80,7 +82,7 @@ for TempTreMethod in ${TempTreMethodLIST[@]};do
                         ARMODE0=${ACMODE[@]}
                 elif [ $METH_ID == "gFAST" ]; then
                         ARMODE0=1
-		elif [ $METH_ID == "3dREMLfit" ]; then
+		elif [[ $METH_ID == *"3dREMLfit"* ]]; then
 			ARMODE0=1
 			MAO=1
                 fi
@@ -104,13 +106,15 @@ for TempTreMethod in ${TempTreMethodLIST[@]};do
 					wTDIR=${SubDIR}/ED${EDtype}_${METH_ID}_AR${ARO}_MA${MAO}_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_Wcbhat_ICACLEAN0_GSR0.nii.gz
 					wVDIR=${SubDIR}/ED${EDtype}_${METH_ID}_AR${ARO}_MA${MAO}_FWHM${FWHMsize}_${TempTreMethod}${TempTrendP[$tr_cnt]}_wvc_ICACLEAN0_GSR0.nii.gz
 
-					if [ $METH_ID == '3dREMLfit' ]; then
+					if [[ $METH_ID == *"3dREMLfit"* ]]; then
 						echo "copy stuff to the right naming format."
 						WBETAtmp=${SubDIR}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_wbeta.nii.gz
 						WSTDtmp=${SubDIR}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_REMLvar_wstd.nii.gz
+						WTtmp=${SubDIR}/${EDtype}_sub-${SubID}_ses-${SesID}_Decon_REML_wtv.nii.gz
 
 						${FSLDIR}/bin/fslmaths ${WBETAtmp} ${wTDIR} #just copy
-						${FSLDIR}/bin/fslmaths ${WSTDtmp} -sqr ${wVDIR} # AFNI outputs std, we need variance
+						${FSLDIR}/bin/fslmaths ${wTDIR} -div ${WTtmp} ${wVDIR} # get the se
+						${FSLDIR}/bin/fslmaths ${wVDIR} -sqr ${wVDIR} # se to variance
  					fi
 
 #                                        if [ ! -f $TDIR ] || [ ! -f $wTDIR ] || [ ! -f $wVDIR ]; then
