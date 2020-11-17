@@ -32,6 +32,9 @@ disp(['FSLDIR: ' getenv('FSLDIR')])
 disp(['EDtype: ' EDtype])
 disp('=======================================')
 
+
+P2InoID=Path2ImgResults;
+
 TaskType = 'kernel'; 
 taskSNR = 0; 
 
@@ -82,6 +85,7 @@ end
 
 
 fwhmlab='';
+fwhmlab2='';
 % if lFWHM
 %     fwhmlab=['_fwhm' num2str(lFWHM)];
 % end
@@ -114,7 +118,9 @@ disp(['Image: ' Path2Img])
 disp(['Motion params: ' Path2MC])
 
 % Directory 2 save the results
+
 Path2ImgResults=[Path2ImgResults '/' SubID '_' SesID];
+
 if ~exist(Path2ImgResults, 'dir')
 	mkdir(Path2ImgResults)
 	disp(['The directory: ' Path2ImgResults ' did not exists. I made one. '])
@@ -255,6 +261,9 @@ if lFWHM
     disp('++ Smooth the task incuced data.')
     Y   = ApplyFSLSmoothing(Y',lFWHM,InputImgStat,path2mask)';
     if size(Y,1)~=T; Y = Y'; end; %TxV 
+
+
+     fwhmlab2=['_fwhm' num2str(lFWHM)];
  
 end
 
@@ -312,10 +321,11 @@ Y(:,Idx_roi)  = Yroit;
 
 disp('Task was injected.')
 
+if ~exist('NumTmpTrend','var'); NumTmpTrend=[]; end;
 if strcmpi(pwdmethod,'3dREMLfit')
     
-    fname    = [Path2ImgDir '/mcdc/func_mcdc_masked_brain' fwhmlab '_KernelSimTask.nii'];
-    CleanNIFTI_spm(Y,'ImgInfo',InputImgStat.spmV,'DestDir',fname,'removables',InputImgStat.Removables);    
+    fname    = [Path2ImgDir '/mcdc/func_mcdc_masked_brain' fwhmlab2 '_KernelSimTask.nii'];
+    CleanNIFTI_spm(Y','ImgInfo',InputImgStat.spmV,'DestDir',fname,'removables',InputImgStat.Removables);    
     
 else
     % ------------------------------------------------------------------------
@@ -425,7 +435,8 @@ tic;
 disp('++++++++++++++++++++++++++++++++++++')
 disp('++++++++++++PREWHITEN THE MODEL.')
 disp('++++++++++++++++++++++++++++++++++++')
-MPparamNum = 0; 
+
+#MPparamNum = 0; 
 if strcmpi(pwdmethod,'AR-W') %Worsely %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,~,wse,wtv,wzv] = arw(Y,X,glmcont,Mord,InputImgStat,path2mask,K);
     
@@ -583,19 +594,23 @@ elseif strcmpi(pwdmethod,'ARMAReML') % ARMAHR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 elseif strcmpi(pwdmethod,'3dREMLfit')
     afni_3dREMLfit = ['/users/nichols/scf915/bin/FILM2/mis/run_Sim3dREMLfit.sh']; 
-    run_string = ['sh ' afni_3dREMLfit ' ' CohortID ' ' num2str(T) ' ' num2str(TR*1000) ' ' SubID ' ' SesID ' ' num2str(FWHMl) ' ' num2str(gsrflag) ' ' icaflag ' ' Path2ImgResults];
+    run_string = ['sh ' afni_3dREMLfit ' ' COHORT ' ' num2str(TR) ' ' num2str(T) ' ' SubID ' ' SesID ' ' num2str(lFWHM) ' ' num2str(gsrflag) ' ' num2str(icaclean) ' ' P2InoID];
     disp('AFNI RUNNING: ')
     disp(run_string)
     flag = system(run_string)
     
     
-    Path2wtvImg = [Path2ImgResults '/' SubID '_' SesID '/' EDtype '_sub-' SubID '_ses-' SesID '_Decon_REML_wtv.nii.gz'];
+    Path2wtvImg = [P2InoID '/' SubID '_' SesID '/' EDtype '_sub-' SubID '_ses-' SesID '_Decon_REML_wtv.nii.gz'];
     disp('*****')
     disp(['Path 2 tv: ' Path2wtvImg])
     [wtv,InputImgStat_wtv] = CleanNIFTI_spm(Path2wtvImg);
+
+    XD1 = load([P2InoID '/' SubID '_' SesID '/Xmat.txt']);    
     
-    
-    %stat.df = T-
+    size(XD1)
+    stat.df = T-size(XD1,2)
+
+   [~,NumTmpTrend]   = GenerateTemporalTrends(T,TR,'poly',[]);
     
 else
     error('Unrecognised prewhitening method.')
@@ -609,11 +624,11 @@ toc
 pID            = 0.0001;
 wpID           = 0.0001;
 
-pv      = t2p(tv,stat.df,0.05/2);
-hv            = pv; 
-hv(hv<pID)    = 1;
-hv(hv~=1)     = 0;
-[Sen,Spc,Acc,TP,FP,FN,TN] = SenSpec(hv,Idx_roi);
+#pv      = t2p(tv,stat.df,0.05/2);
+#hv            = pv; 
+#hv(hv<pID)    = 1;
+#hv(hv~=1)     = 0;
+#[Sen,Spc,Acc,TP,FP,FN,TN] = SenSpec(hv,Idx_roi);
 
 wpv    = t2p(wtv,stat.df,0.05/2);
 whv           = wpv; 
@@ -781,7 +796,7 @@ if SaveMatFileFlag
     GLM.EDtype  = EDtype;
     GLM.EDFreq  = BCl; 
         
-    NTASK.BIN        = [Sen,Spc,Acc,TP,FP,FN,TN];
+ #   NTASK.BIN        = [Sen,Spc,Acc,TP,FP,FN,TN];
     NTASK.wBIN       = [wSen,wSpc,wAcc,wTP,wFP,wFN,wTN];
     NTASK.SNR        = taskSNR;    
     
