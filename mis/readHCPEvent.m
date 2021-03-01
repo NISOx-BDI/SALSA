@@ -1,30 +1,30 @@
-% 
-% CohortID = 'tHCP';
-% TaskName = 'MOTOR';
-% T  = 284; 
-% TR = 0.72;
-% 
-% path2saveEVs = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
-% 
-% ParadNameList = {'t','lh','rh','lf','rf'};
-% 
-% figure; hold on; 
-% for tt = ParadNameList
-%     filename = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID '/' TaskName '/' tt{1} '.txt'];
-%     [EXD,EventTrail,OnSet,Duration,Events] = readHCPEvent0(filename,T,TR);
-%     
-%     
-%     filename=[path2saveEVs '/' TaskName '/task-' TaskName '_acq' num2str(TR*1000) '_' tt{1} '_event.txt'];
-%     fileID = fopen(filename,'w');
-%     fprintf(fileID,'%f\n',EXD');
-%     fclose(fileID);    
-%     
-%     plot(EXD); 
-%     
-% end
-% legend(ParadNameList)
 
-function [EDX,EventTrail,OnSet,Duration,Events] = readHCPEvent(Path2Event,T,TR)
+CohortID = 'tHCP';
+TaskName = 'GAMBLING';
+T  = 253; 
+TR = 0.72;
+
+path2saveEVs = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
+
+ParadNameList = {'loss_event','win_event','loss','win'};
+
+figure; hold on; 
+for tt = ParadNameList
+    filename = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID '/' TaskName '/' tt{1} '.txt'];
+    [EXD,EventTrail,OnSet,Duration,Events] = readHCPEvent0(filename,T,TR);
+    
+    
+    filename=[path2saveEVs '/' TaskName '/task-' TaskName '_acq-' num2str(TR*1000) '_' tt{1} '_event.txt'];
+    fileID = fopen(filename,'w');
+    fprintf(fileID,'%f\n',EXD');
+    fclose(fileID);    
+    
+    plot(EXD); 
+    
+end
+legend(ParadNameList)
+
+function [EDX,EventTrail,OnSet,Duration,Events] = readHCPEvent0(Path2Event,T,TR)
 
     dataArray = load(Path2Event);
     

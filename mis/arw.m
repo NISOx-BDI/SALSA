@@ -37,7 +37,7 @@
 % plot(WPSDx,mean(WPSDy,2))
 
 
-function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = arw5(Y,X,tcon,ARO,ImgStat,path2mask,K)
+function [cbhat,RES,stat,se,tv,zv,Wcbhat,WYhat,WRES,WBLUSRES,wse,wtv,wzv] = arw(Y,X,tcon,ARO,ImgStat,path2mask,K)
 % Y    : TxV
 % X    : TxEV. X should have the detreding basis + motion parameters
 % tcon : 1xEV
