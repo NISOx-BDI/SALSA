@@ -1,16 +1,24 @@
-% clear
-% 
-% CohortID           = 'ROCKLAND';
-% nsub               = 1;
-% NumTask            = 1; 
-% 
+% % clear
+% % 
+% % CohortID           = 'ROCKLAND';
+% % nsub               = 1;
+% % NumTask            = 1; 
+% % 
 % addpath('/Users/sorooshafyouni/Home/matlab/spm12') 
+% % 
+% % T                  = 404;
+% % TR                 = 1.4;
+% % BCl                = 10;
+% % 
 % 
-% T                  = 404;
-% TR                 = 1.4;
+% CohortID           = 'NEO';
+% T                  = 2300;
 % BCl                = 10;
-% 
+% TR                 = 0.392;
 % EDX = GenerateER0(T,TR,1,BCl,0); 
+% 
+% figure; 
+% plot(EDX)
 % 
 % path2saveEVs = ['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
 % filename=[path2saveEVs '/' CohortID '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '_taskpersec' num2str(BCl) '.txt'];

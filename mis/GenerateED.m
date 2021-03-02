@@ -3,7 +3,7 @@ function EDX = GenerateED(lD,T,TR,onset)
 % lD: length of stimuli in seconds
 % T : length of the scan
 % TR: TR in second
-
+% SA, 2020
     tonset      = onset.*2; % use the same onset for the end too.
     Ted         = T-tonset;
     BCWidth     = fix(lD/2/TR);
