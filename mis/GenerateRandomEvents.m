@@ -11,7 +11,7 @@ CohortID           = 'NEO';
 T                  = 2300;
 TR                 = 0.392;
 
-nsub               = 1;
+nsub               = 51;
 
 % NKI 1400
 % T                  = 404;
@@ -24,19 +24,19 @@ nsub               = 1;
 TaskRate = 5;
 [EDX1,EDX2] = Generate2ER(T,TR,nsub,TaskRate);
 
-%path2saveEVs=['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
-%system(['mkdir -p ' path2saveEVs])
-% Path2Mats=['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_' CohortID '/']; 
-% FigDir = '/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/Img/FPR/RFigs';
-% SubIDPath = [Path2Mats '/' CohortID '_subid.mat'];
-% load(SubIDPath)
-% SubList=participants(1:nsub); 
-% for i = 1:nsub
-%     filename=[path2saveEVs '/' CohortID '_sub_' SubList{sub_cnt} '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-%     fileID = fopen(filename,'w');
-%     fprintf(fileID,'%f %f\n',[EDX1(:,sub_cnt),EDX2(:,sub_cnt)]');
-%     fclose(fileID);
-% end
+path2saveEVs=['/Users/sorooshafyouni/Home/GitClone/FILM2/mis/EVs/' CohortID];
+system(['mkdir -p ' path2saveEVs])
+Path2Mats=['/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_' CohortID '/']; 
+FigDir = '/Users/sorooshafyouni/Home/GitClone/FILM2/NullRealfMRI/Img/FPR/RFigs';
+SubIDPath = [Path2Mats '/' CohortID '_subid.mat'];
+load(SubIDPath)
+SubList=participants(1:nsub); 
+for sub_cnt = 1:nsub
+    filename=[path2saveEVs '/' CohortID '_sub_' SubList{sub_cnt} '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
+    fileID = fopen(filename,'w');
+    fprintf(fileID,'%f %f\n',[EDX1(:,sub_cnt),EDX2(:,sub_cnt)]');
+    fclose(fileID);
+end
 
 psfh = figure('position',[50,500,650,600]);
 subplot(3,1,1)
