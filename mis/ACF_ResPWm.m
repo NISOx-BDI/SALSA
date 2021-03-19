@@ -1,4 +1,5 @@
-function [sqrtmVhalf,spdflag] = ACF_ResPWm(autocov,AROrd,BiasAdj,tflag)
+
+function [sqrtmVhalf,spdflag,ACMat] = ACF_ResPWm(autocov,AROrd,BiasAdj,tflag)
 %
 % dRESacov : autocovariance 
 % Mord : Order required 
