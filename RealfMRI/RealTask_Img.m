@@ -15,10 +15,10 @@ clear;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 COHORT = 'ROCKLAND'; 
 TaskName = 'CHECKERBOARD'; 
-pwdmethod = 'gACFadjxACFadj2tT1S0P5'; %ACF AR-YW AR-W ARMAHR
-Mord      = 16; 
-lFWHM     = 5;
-SubID     = 'A00008399';
+pwdmethod = 'ACF'; %ACF AR-YW AR-W ARMAHR
+Mord      = 15; 
+lFWHM     = 0;
+SubID     = 'A00028177';
 SesID     = 'DS2'; 
 TR        = 0.645;
 icaclean  = 0;
@@ -27,7 +27,7 @@ icaclean  = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-TempTreMethod = 'hpfk'; 
+TempTreMethod = 'poly'; 
 NumTmpTrend   = [];
 
 %/Users/sorooshafyouni/Home/GitClone/FILM2/Externals/R_ROCKLAND/R.PW/T900/ROCKLAND_645_900_ACFadjT0S0_AR--2_MA-0_FWHM5_hpfk_gsr0_aroma0/A00028150_DS
@@ -80,6 +80,8 @@ if strcmpi(COHORT,'ROCKLAND')
     path2mask    = [Path2ImgDir '/mask.nii.gz']; 
     Path2MC      = [Path2ImgDir '/prefiltered_func_data_mcf.par'];
     
+    Path2Event = [Path2ImgDir '/sub-' SubID '_ses-' SesID '_' EDtype '_events.tsv']; 
+        
 elseif strcmpi(COHORT,'HCP')
     Path2ImgRaw = [COHORTDIR '/R_mpp/sub-' SubID '/ses-' SesID];
     Path2ImgDir = [Path2ImgRaw '/' SubID '_3T_tfMRI_' SesID '_mpp'];
@@ -153,39 +155,12 @@ disp('++++++++++++ Construct a design matrix')
 disp('++++++++++++++++++++++++++++++++++++')
 
 %%% Generate a Design Matrix --------------------------------
+% This doesn't work on Octave because of textscan! So I'm gonna use text
+% files to make thing easier + safer. 
+%[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
 
-% if strcmpi(EDtype,'boxcar')
-%     BCl = 20;
-%     EDX = GenerateED(BCl,T,TR,fix(T/15)); 
-%     EDX = EDX - mean(EDX); 
-% elseif strcmpi(EDtype,'er')
-% %     BCl = 0;
-% %     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-% %     EDX = load(path2evs);
-% %     disp(['Paradigm comes from: ' path2evs])
-%     BCl = 10; 
-%     [EDX1,EDX2] = Generate2ER(T,TR,1,BCl);
-%     EDX = [EDX1,EDX2]; 
-% elseif strcmpi(EDtype,'erf')
-%     BCl = 0;
-%     path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' COHORT '_ERF_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-%     EDX = load(path2evs);    
-%     disp(['Paradigm comes from: ' path2evs])
-% elseif strcmpi(EDtype,'RegpEV')
-%     BCl = 0;
-%     path2evs=[PATH2AUX '/mis/EVs/RegpEV_' COHORT '/RegpEV_' COHORT '_sub_' SubID '_T' num2str(T) '_TR' num2str(TR*1000) '.txt'];
-%     EDX = load(path2evs);    
-%     disp(['Paradigm comes from: ' path2evs])
-%     nEDX = size(EDX,2);
-% elseif strcmpi(EDtype,'ORPE')
-%     BCl  = 0;
-%     EDX  = GenerateORPE(T,TR,1);
-%     nEDX = size(EDX,2);
-%     disp('Paradigm was set to be One Regressor Per Event.')
-% end
-
-Path2Event = [Path2ImgDir '/sub-' SubID '_ses-' SesID '_' EDtype '_events.tsv']; 
-[EDX,EventTrail,OnSet,Duration,Events] = readBIDSEvent(Path2Event,T,TR);
+path2evs=[PATH2AUX '/mis/EVs/' COHORT '/' EDtype '.txt'];
+EDX = load(path2evs); 
 
 X   = EDX;
 
@@ -201,6 +176,8 @@ if TempDerv
     disp(['design updated, ' num2str(size(X,2))])
 
 end
+
+X(1:40,:)
 
 % Motion parameters ----------------------------------------
 if icaclean==-1; MParamNum = 0; end; 
@@ -247,17 +224,19 @@ disp(['Detrending: ' TempTreMethod ',param: ' num2str(NumTmpTrend)])
 X           = [X,TempTrend];
 disp(['design updated, ' num2str(size(X,2))])
 
-% Centre the design  ----------------------------------
-X           = X - mean(X); % demean everything 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FIT A MODEL TO THE ACd DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-X                  = [ones(T,1),X];
-glmcont            = zeros(1,size(X,2));
-
-if strcmpi(TaskName,'CHECKERBOARD')
+% Centre the design  ----------------------------------
+X           = X - mean(X); % demean everything 
+X           = [ones(T,1),X];
+glmcont     = zeros(1,size(X,2));
+if strcmpi(TaskName,'CHECKERBOARD') && strcmpi(COHORT,'ROCKLAND')
     glmcont(2)          = 1; 
     disp('+ single contrast for boxcar is set.')
+elseif strcmpi(TaskName,'MOTOR_LR') && strcmpi(COHORT,'tHCP')
+    glmcont(2)          = 1; 
+    disp('+ single contrast for boxcar is set.')    
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
